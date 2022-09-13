@@ -1,0 +1,24 @@
+location,description,channel no,node no,B Part,C Part,E Part,legend location,max y-axis value,direction of pump (+ve),sort_order
+CHGRL009,Grant Line Canal at Tracy Brdg,207,172,CHGRL009,VEL-MEAN,1DAY,upper right,2.5,To pumps,13
+CHVCT000,Victoria Canal near Byron,229,190,CHVCT000,VEL-MEAN,1DAY,upper right,14,To pumps,9
+COLUMBIA_CUT,Columbia Cut,160,31,COLUMBIA_CUT,VEL-MEAN,1DAY,upper right,25,Away from pumps,3
+OLDR_HEAD_US_BARRIER,SJR US of Head of Old River,7,8,OLDR_HEAD_US_BARRIER,VEL-MEAN,1DAY,upper right,1.8,To pumps,10
+OLDR_MIDR,Old R at Middle River,59,52,OLDR_MIDR,VEL-MEAN,1DAY,upper right,1.4,To pumps,12
+RMID005,Middle R near Holt,156,130,RMID005,VEL-MEAN,1DAY,upper right,25,Away from pumps,8
+ROLD024,Old R at Bacon Island,106,93,ROLD024,VEL-MEAN,1DAY,upper right,20,Away from pumps,6
+ROLD034,Old R at HWY4,90,80,ROLD034,VEL-MEAN,1DAY,upper right,10,Away from pumps,7
+ROLD059,Old R near Tracy,71,61,ROLD059,VEL-MEAN,1DAY,upper right,5,To pumps,14
+ROLD074,Old R at Head of Old River,54,8,ROLD074,VEL-MEAN,1DAY,upper right,1.6,To pumps,11
+RSAN018,SJR at Jersey Point,83,469,RSAN018,VEL-MEAN,1DAY,upper right,10,Away from pumps,5
+RSAN037,SJR at Prisoners Point,42,37,RSAN037,VEL-MEAN,1DAY,upper right,14,Away from pumps,4
+RSAN072,SJR at Brandt Bridge,10,11,RSAN072,VEL-MEAN,1DAY,upper right,1.8,Away from pumps,1
+TRNR_CUT,Turner Cut,172,26,TRNR_CUT,VEL-MEAN,1DAY,upper right,35,Away from pumps,2
+OLDR_MOUTH,Old R before Franks Tract,124,38,OLDR_MOUTH,VEL-MEAN,1DAY,upper right,20,Away from pumps,15
+FISH_CUT,Fisherman's Cut,280,226,FISH_CUT,VEL-MEAN,1DAY,upper right,14,To pumps,16
+FALSE_R,False R before Franks Tract,279,44,FALSE_R,VEL-MEAN,1DAY,upper right,8,Away from pumps,17
+SLTRM004,Threemile Slough,310,43,SLTRM004,VEL-MEAN,1DAY,upper right,10,Away from pumps,18
+RSAN032,Mokelumne R,349,40,RSAN032,VEL-MEAN,1DAY,upper right,6,To pumps,19
+SJR_DS_BIGBREAK,SJR ds of Big Break,50,461,SJR_DS_BIGBREAK,VEL-MEAN,1DAY,upper right,8,Away from pumps,20
+SJR_DS_OLDRMOUTH,SJR ds of Old River,43,39,SJR_DS_OLDRMOUTH,VEL-MEAN,1DAY,upper right,14,Away from pumps,21
+RSAC101,SacR at Rio Vista,430,351,RSAC101,VEL-MEAN,1DAY,upper right,4.2,Away from pumps,22
+RSAC092,SacR at Emmaton,430,351,RSAC101,VEL-MEAN,1DAY,upper right,4.2,Away from pumps,23

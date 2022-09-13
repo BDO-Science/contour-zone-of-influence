@@ -1,0 +1,57 @@
+---
+title: "node_map"
+author: "Catarina Pien"
+date: '2022-09-13'
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(lubridate)
+library(knitr)
+library(tidyr)
+library(sf)
+library(readr)
+library(mapview)
+```
+
+```{r}
+delta <- st_read("shapefiles/Bay_Delta_Poly_New.shp")
+zoi_file = list.files("data_zoi", pattern = "NAA_*", full.names = TRUE)
+zoi_data <- lapply(zoi_file, read_csv) %>%
+  bind_rows(.id = "id") %>%
+  mutate(id = as.numeric(id)*1000) %>%
+  rename(Flow = id)
+nodes <- st_read("shapefiles/nodes.shp") 
+nodes <- st_transform(nodes, crs = st_crs(delta)) %>%
+  select(nodenum, node, channel_nu, channel_id) %>%
+  rename(channel.no = channel_nu)
+nodenames <- read.csv("data_zoi/inputFile_withnode.csv")
+  
+  
+summary(nodenames)
+summary(nodes)
+```
+
+```{r}
+nodes2 <- left_join(nodes, nodenames)
+mapview(nodes2, zcol = "description")
+```
+Potential nodes to look at 
+```{r}
+
+nodesofinterest <- c(140, 26, 133, 38, 103, 44, 226, 272, 350, 45, 417, 356, 354, 467, 52, 7)
+nodes2 <- nodes2 %>%
+  mutate(selected = ifelse(node %in% nodesofinterest, "Y", "N"))
+```
+
+```{r}
+mapview(nodes2, zcol = "selected")
+```
+
