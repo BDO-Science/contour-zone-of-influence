@@ -130,7 +130,7 @@ tm_shape(r.m3) +
   tm_shape(may_3000_sp) + tm_dots(size=0.2) +
   tm_legend(legend.outside=TRUE)
 
-### Contours ------------------------------------
+### All Contours ------------------------------------
 
 # Did not figure out how to label this
 contour1 <- rasterToContour(r.m1)
@@ -141,6 +141,92 @@ plot(contour2)
 
 contour3 <- rasterToContour(r.m3)
 plot(contour3)
+
+contour4 <- rasterToContour(r.m4)
+plot(contour4)
+
+contour5 <- rasterToContour(r.m5)
+plot(contour5)
+
+# Plot
+#This map has basemap, A map for zooming in (note that in view mode you can only have fill legends)
+current.mode <- tmap_mode("view")
+opts <- tmap_options(basemaps = c(Canvas = "Esri.WorldImagery", Imagery = "Esri.WorldImagery"))# Use tmap options to set the basemap and overlay map permanently during the R session:
+
+tm_shape(contour1) +
+  tm_lines(col = "level") +
+  tm_shape(month_1000_sp) + tm_dots(col = "DSM2", size=0.01) +
+  tm_basemap() +
+  tm_layout(title = paste0(Month, " -", month_1000_sp$Flow[1], " OMR Flow")) +
+  tm_legend(legend.outside=TRUE)
+
+tm_shape(contour2) +
+  tm_lines(col = "level") +
+  tm_shape(month_2000_sp) + tm_dots(col = "DSM2", size=0.01) +
+  tm_basemap() +
+  tm_layout(title = paste0(Month, " -", month_2000_sp$Flow[1], " OMR Flow")) +
+  tm_legend(legend.outside=TRUE)
+
+tm_shape(contour3) +
+  tm_lines(col = "level") +
+  tm_shape(month_3000_sp) + tm_dots(col = "DSM2", size=0.01) +
+  tm_basemap() +
+  tm_layout(title = paste0(Month, " -", month_3000_sp$Flow[1], " OMR Flow")) +
+  tm_legend(legend.outside=TRUE)
+
+tm_shape(contour4) +
+  tm_lines(col = "level") +
+  tm_shape(month_4000_sp) + tm_dots(col = "DSM2", size=0.01) +
+  tm_basemap() +
+  tm_layout(title = paste0(Month, " -", month_4000_sp$Flow[1], " OMR Flow")) +
+  tm_legend(legend.outside=TRUE)
+
+tm_shape(contour5) +
+  tm_lines(col = "level") +
+  tm_shape(month_5000_sp) + tm_dots(col = "DSM2", size=0.01) +
+  tm_basemap() +
+  tm_layout(title = paste0(Month, " -", month_5000_sp$Flow[1], " OMR Flow")) +
+  tm_legend(legend.outside=TRUE)
+
+### Best Contour ------------------------------------
+
+#This map shows single best contour (no raster)
+contour1_7 <- rasterToContour(r.m1, levels = c(0.7))
+contour2_7 <- rasterToContour(r.m2, levels = c(0.7))
+contour3_7 <- rasterToContour(r.m3, levels = c(0.7))
+contour4_7 <- rasterToContour(r.m4, levels = c(0.7))
+contour5_7 <- rasterToContour(r.m5, levels = c(0.7))
+
+current.mode <- tmap_mode("view")
+
+#Maps with basemap
+tm_shape(contour2_7) +
+  tm_lines(col = "level") +
+  tm_shape(month_2000_sp) + tm_dots(col = "DSM2", size=0.01) +
+  tm_basemap() +
+  tm_layout(title = paste0(Month, " -", month_2000_sp$Flow[1], " OMR Flow")) +
+  tm_legend(legend.outside=TRUE)
+
+tm_shape(contour3_7) +
+  tm_lines(col = "level") +
+  tm_shape(month_3000_sp) + tm_dots(col = "DSM2", size=0.01) +
+  tm_basemap() +
+  tm_layout(title = paste0(Month, " -", month_3000_sp$Flow[1], " OMR Flow")) +
+  tm_legend(legend.outside=TRUE)
+
+tm_shape(contour4_7) +
+  tm_lines(col = "level") +
+  tm_shape(month_4000_sp) + tm_dots(col = "DSM2", size=0.01) +
+  tm_basemap() +
+  tm_layout(title = paste0(Month, " -", month_4000_sp$Flow[1], " OMR Flow")) +
+  tm_legend(legend.outside=TRUE)
+
+tm_shape(contour5_7) +
+  tm_lines(col = "level") +
+  tm_shape(month_5000_sp) + tm_dots(col = "DSM2", size=0.01) +
+  tm_basemap() +
+  tm_layout(title = paste0(Month, " -", month_5000_sp$Flow[1], " OMR Flow")) +
+  tm_legend(legend.outside=TRUE)
 
 
 
