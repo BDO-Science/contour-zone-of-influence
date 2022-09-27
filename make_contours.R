@@ -17,6 +17,9 @@ library(raster)
 library(tmap)
 library(rgdal)
 
+# Visualization
+library(ggspatial)
+
 ### Read/Join data ---------------------------------------------------------
 delta <- st_read("shapefiles/Bay_Delta_Poly_New.shp")
 zoi_file = list.files("data_zoi", pattern = "NAA_*", full.names = TRUE)
@@ -24,21 +27,28 @@ zoi_data <- lapply(zoi_file, read_csv) %>%
   bind_rows(.id = "id") %>%
   mutate(id = as.numeric(id)*1000) %>%
   rename(Flow = id)
+Month <- "May" #CHANGE THIS TO DESIRED MONTH
 nodes <- st_read("shapefiles/nodes.shp") %>%
   dplyr::select(node)
-nodes <- st_transform(nodes, crs = st_crs(delta))
+
+
+# Change all to 4326
+delta_4326 <- st_transform(delta, crs = 4326)
+nodes_4326 <- st_transform(nodes, crs = st_crs(delta_4326))
+
 
 ### May only ---------------------------------------------------------------
-may <- zoi_data %>% dplyr::select(Flow, node, May)
-may_node <- inner_join(nodes, may) %>%
-  mutate(May = ifelse(May<0, NA, May)) %>%
+month <- zoi_data %>% dplyr::select(Flow, node, Month) %>%
+  rename(DSM2 = May)
+month_node <- inner_join(nodes_4326, month) %>%
+  mutate(DSM2 = ifelse(DSM2<0, NA, DSM2)) %>%
   na.omit()# may be some missing
 
 ### Split up into different files
-may_1000 <- may_node %>% filter(Flow == 1000)
-may_2000 <- may_node %>% filter(Flow == 2000)
-may_3000 <- may_node %>% filter(Flow == 3000)
-may_4000 <- may_node %>% filter(Flow == 4000)
+month_1000 <- month_node %>% filter(Flow == 1000)
+month_2000 <- month_node %>% filter(Flow == 2000)
+month_3000 <- month_node %>% filter(Flow == 3000)
+month_4000 <- month_node %>% filter(Flow == 4000)
 
 ### IDW --------------------------------------
 #1 https://rpubs.com/Dr_Gurpreet/interpolation_idw_R
@@ -46,244 +56,217 @@ may_4000 <- may_node %>% filter(Flow == 4000)
      #2 is where the code below comes from (I don't really understand it too well!)
 
 # Separate into different files for each flow
-delta_sp <- as(delta, "Spatial")
-may_1000_sp <- as(may_1000, "Spatial")
-may_2000_sp <- as(may_2000, "Spatial")
-may_3000_sp <- as(may_3000, "Spatial")
-may_4000_sp <- as(may_4000, "Spatial")
+delta_sp <- as(delta_4326, "Spatial")
+month_1000_sp <- as(month_1000, "Spatial")
+month_2000_sp <- as(month_2000, "Spatial")
+month_3000_sp <- as(month_3000, "Spatial")
+month_4000_sp <- as(month_4000, "Spatial")
 
 # * 1000 ----------------------------------------
 # Create grid based on bounding box of data
-grd <- as.data.frame(spsample(may_1000_sp, "regular", n = 50000))
+grd <- as.data.frame(spsample(month_1000_sp, "regular", n = 50000))
 names(grd)       <- c("X", "Y")
 coordinates(grd) <- c("X", "Y")
 gridded(grd)     <- TRUE  # Create SpatialPixel object
 fullgrid(grd)    <- TRUE  # Create SpatialGrid object
 
 # Add projection information to the empty grid
-proj4string(may_1000_sp) <- proj4string(may_1000_sp) # Temp fix until new proj env is adopted
-proj4string(grd) <- proj4string(may_1000_sp)
+proj4string(month_1000_sp) <- proj4string(month_1000_sp) # Temp fix until new proj env is adopted
+proj4string(grd) <- proj4string(month_1000_sp)
 
 # Interpolate the grid cells using a power value of 2 (idp=2.0)
-may.idw <- gstat::idw(May ~ 1, may_1000_sp, newdata=grd, idp=2.0)
+month.idw <- gstat::idw(DSM2 ~ 1, month_1000_sp, newdata=grd, idp=2.0)
 
 # Convert to raster object then clip to Texas
-r1       <- raster(may.idw)
+r1       <- raster(month.idw)
 r.m1     <- mask(r1, delta_sp)
 
 # Plot
 tm_shape(r.m1) +
-  tm_raster(n=10,palette = "RdBu", auto.palette.mapping = FALSE,
+  tm_raster(n=10,palette = "RdBu",
+            auto.palette.mapping = FALSE,
             title="Data") +
-  tm_shape(may_1000_sp) + tm_dots(size=0.2) +
+  tm_shape(month_1000_sp) + tm_dots(size=0.05) +
   tm_legend(legend.outside=TRUE)
 
 # * 2000 ----------------------------------------
 # Create grid based on bounding box of data
-grd <- as.data.frame(spsample(may_2000_sp, "regular", n = 50000))
+grd <- as.data.frame(spsample(month_2000_sp, "regular", n = 50000))
 names(grd)       <- c("X", "Y")
 coordinates(grd) <- c("X", "Y")
 gridded(grd)     <- TRUE  # Create SpatialPixel object
 fullgrid(grd)    <- TRUE  # Create SpatialGrid object
 
 # Add projection information to the empty grid
-proj4string(may_2000_sp) <- proj4string(may_2000_sp) # Temp fix until new proj env is adopted
-proj4string(grd) <- proj4string(may_2000_sp)
+proj4string(month_2000_sp) <- proj4string(month_2000_sp) # Temp fix until new proj env is adopted
+proj4string(grd) <- proj4string(month_2000_sp)
 
 # Interpolate the grid cells using a power value of 2 (idp=2.0)
-may.idw <- gstat::idw(May ~ 1, may_2000_sp, newdata=grd, idp=2.0)
+month.idw <- gstat::idw(DSM2 ~ 1, month_2000_sp, newdata=grd, idp=2.0)
 
 # Convert to raster object then clip to Texas
-r2      <- raster(may.idw)
+r2      <- raster(month.idw)
 r.m2    <- mask(r2, delta_sp)
 
 # Plot
 tm_shape(r.m2) +
   tm_raster(n=10,palette = "RdBu", auto.palette.mapping = FALSE,
             title="Data") +
-  tm_shape(may_2000_sp) + tm_dots(size=0.2) +
+  tm_shape(month_2000_sp) + tm_dots(size=0.2) +
   tm_legend(legend.outside=TRUE)
 
 # * 3000 ----------------------------------------
 # Create grid based on bounding box of data
-grd <- as.data.frame(spsample(may_3000_sp, "regular", n = 50000))
+grd <- as.data.frame(spsample(month_3000_sp, "regular", n = 50000))
 names(grd)       <- c("X", "Y")
 coordinates(grd) <- c("X", "Y")
 gridded(grd)     <- TRUE  # Create SpatialPixel object
 fullgrid(grd)    <- TRUE  # Create SpatialGrid object
 
 # Add projection information to the empty grid
-proj4string(may_3000_sp) <- proj4string(may_3000_sp) # Temp fix until new proj env is adopted
-proj4string(grd) <- proj4string(may_3000_sp)
+proj4string(month_3000_sp) <- proj4string(month_3000_sp) # Temp fix until new proj env is adopted
+proj4string(grd) <- proj4string(month_3000_sp)
 
 # Interpolate the grid cells using a power value of 2 (idp=2.0)
-may.idw <- gstat::idw(May ~ 1, may_3000_sp, newdata=grd, idp=2.0)
+month.idw <- gstat::idw(DSM2 ~ 1, month_3000_sp, newdata=grd, idp=2.0)
 
 # Convert to raster object then clip to Texas
-r3       <- raster(may.idw)
+r3       <- raster(month.idw)
 r.m3     <- mask(r3, delta_sp)
 
 # Plot
 tm_shape(r.m3) +
   tm_raster(n=10,palette = "RdBu", auto.palette.mapping = FALSE,
             title="Data") +
-  tm_shape(may_3000_sp) + tm_dots(size=0.2) +
+  tm_shape(month_3000_sp) + tm_dots(size=0.2) +
   tm_legend(legend.outside=TRUE)
+
+### Functions ------------------------------------
+create_df <- function(month, flow) {
+  month_data <- zoi_data %>%
+    dplyr::select(Flow, node, month) %>%
+    rename(DSM2 = month)
+  month_node <- inner_join(nodes_4326, month_data) %>%
+    mutate(DSM2 = ifelse(DSM2<0, NA, DSM2)) %>%
+    na.omit()# may be some missing
+
+  df_filtered <- month_node %>% filter(Flow == flow)
+  df_filt_sp <- as(df_filtered, "Spatial")
+
+  return(df_filt_sp)
+}
+
+interp_nodes <- function(df, mask=delta_sp) {
+
+  grd <- as.data.frame(spsample(df, "regular", n = 50000))
+  names(grd)       <- c("X", "Y")
+  coordinates(grd) <- c("X", "Y")
+  gridded(grd)     <- TRUE  # Create SpatialPixel object
+  fullgrid(grd)    <- TRUE  # Create SpatialGrid object
+
+  # Add projection information to the empty grid
+  proj4string(df) <- proj4string(df) # Temp fix until new proj env is adopted
+  proj4string(grd) <- proj4string(df)
+
+  # Interpolate the grid cells using a power value of 2 (idp=2.0)
+  month.idw <- gstat::idw(DSM2 ~ 1, df, newdata=grd, idp=2.0)
+
+  # Convert to raster object then clip to Texas
+  raster       <- raster(month.idw)
+  raster_mask     <- mask(raster, mask)
+
+  return(raster_mask)
+
+}
+
+may_3000_sp <- create_df(month = "May", flow = 3000)
+r.m3 <- interp_nodes(may_3000_sp)
+
+plot(r.m3)
+
+
+
+feb_3000_sp <- create_df(month = "Feb", flow = 3000)
+r.m3 <- interp_nodes(feb_3000_sp)
+
+plot(r.m3)
+
 
 ### All Contours ------------------------------------
 
 # Did not figure out how to label this
-contour1 <- rasterToContour(r.m1)
-plot(contour1)
+contour1_95 <- rasterToContour(r.m1, levels = 0.95)
+plot(contour1_95)
+contour1_75 <- rasterToContour(r.m1, levels = 0.75)
+plot(contour1_75)
 
-contour2 <- rasterToContour(r.m2)
-plot(contour2)
+contour2_95 <- rasterToContour(r.m2, levels = 0.95)
+contour2_75 <- rasterToContour(r.m2, levels = 0.75)
 
-contour3 <- rasterToContour(r.m3)
-plot(contour3)
+contour3_95 <- rasterToContour(r.m3, levels = 0.95)
+contour3_75 <- rasterToContour(r.m3, levels = 0.75)
 
-contour4 <- rasterToContour(r.m4)
-plot(contour4)
+contour4_95 <- rasterToContour(r.m4, levels = 0.95)
+contour4_75 <- rasterToContour(r.m4, levels = 0.75)
 
-contour5 <- rasterToContour(r.m5)
-plot(contour5)
+### Plot -----------------------
 
-# Plot
-#This map has basemap, A map for zooming in (note that in view mode you can only have fill legends)
-current.mode <- tmap_mode("view")
-opts <- tmap_options(basemaps = c(Canvas = "Esri.WorldImagery", Imagery = "Esri.WorldImagery"))# Use tmap options to set the basemap and overlay map permanently during the R session:
-
-tm_shape(contour1) +
-  tm_lines(col = "level") +
-  tm_shape(month_1000_sp) + tm_dots(col = "DSM2", size=0.01) +
-  tm_basemap() +
-  tm_layout(title = paste0(Month, " -", month_1000_sp$Flow[1], " OMR Flow")) +
-  tm_legend(legend.outside=TRUE)
-
-tm_shape(contour2) +
-  tm_lines(col = "level") +
-  tm_shape(month_2000_sp) + tm_dots(col = "DSM2", size=0.01) +
-  tm_basemap() +
-  tm_layout(title = paste0(Month, " -", month_2000_sp$Flow[1], " OMR Flow")) +
-  tm_legend(legend.outside=TRUE)
-
-tm_shape(contour3) +
-  tm_lines(col = "level") +
-  tm_shape(month_3000_sp) + tm_dots(col = "DSM2", size=0.01) +
-  tm_basemap() +
-  tm_layout(title = paste0(Month, " -", month_3000_sp$Flow[1], " OMR Flow")) +
-  tm_legend(legend.outside=TRUE)
-
-tm_shape(contour4) +
-  tm_lines(col = "level") +
-  tm_shape(month_4000_sp) + tm_dots(col = "DSM2", size=0.01) +
-  tm_basemap() +
-  tm_layout(title = paste0(Month, " -", month_4000_sp$Flow[1], " OMR Flow")) +
-  tm_legend(legend.outside=TRUE)
-
-tm_shape(contour5) +
-  tm_lines(col = "level") +
-  tm_shape(month_5000_sp) + tm_dots(col = "DSM2", size=0.01) +
-  tm_basemap() +
-  tm_layout(title = paste0(Month, " -", month_5000_sp$Flow[1], " OMR Flow")) +
-  tm_legend(legend.outside=TRUE)
-
-### Best Contour ------------------------------------
-
-#This map shows single best contour (no raster)
-contour1_7 <- rasterToContour(r.m1, levels = c(0.7))
-contour2_7 <- rasterToContour(r.m2, levels = c(0.7))
-contour3_7 <- rasterToContour(r.m3, levels = c(0.7))
-contour4_7 <- rasterToContour(r.m4, levels = c(0.7))
-contour5_7 <- rasterToContour(r.m5, levels = c(0.7))
-
-current.mode <- tmap_mode("view")
-
-#Maps with basemap
-tm_shape(contour2_7) +
-  tm_lines(col = "level") +
-  tm_shape(month_2000_sp) + tm_dots(col = "DSM2", size=0.01) +
-  tm_basemap() +
-  tm_layout(title = paste0(Month, " -", month_2000_sp$Flow[1], " OMR Flow")) +
-  tm_legend(legend.outside=TRUE)
-
-tm_shape(contour3_7) +
-  tm_lines(col = "level") +
-  tm_shape(month_3000_sp) + tm_dots(col = "DSM2", size=0.01) +
-  tm_basemap() +
-  tm_layout(title = paste0(Month, " -", month_3000_sp$Flow[1], " OMR Flow")) +
-  tm_legend(legend.outside=TRUE)
-
-tm_shape(contour4_7) +
-  tm_lines(col = "level") +
-  tm_shape(month_4000_sp) + tm_dots(col = "DSM2", size=0.01) +
-  tm_basemap() +
-  tm_layout(title = paste0(Month, " -", month_4000_sp$Flow[1], " OMR Flow")) +
-  tm_legend(legend.outside=TRUE)
-
-tm_shape(contour5_7) +
-  tm_lines(col = "level") +
-  tm_shape(month_5000_sp) + tm_dots(col = "DSM2", size=0.01) +
-  tm_basemap() +
-  tm_layout(title = paste0(Month, " -", month_5000_sp$Flow[1], " OMR Flow")) +
-  tm_legend(legend.outside=TRUE)
+#### Make ggmap -----------------
+library(ggmap)
 
 
+coords <- data.frame(st_coordinates(delta_4326))
+coords <- data.frame(st_coordinates(delta))
+
+# Define coordinate bounding box. You could also use numbers if you want.
+buffer = 0.1
+coordDict = list(
+  'minLat' = min(coords$Y) - buffer,
+  'maxLat' = max(coords$Y) + buffer,
+  'minLon' = min(coords$X) - buffer,
+  'maxLon' = max(coords$X) + buffer
+)
+# Create map object using your bounded coordinates
+map_obj <- get_stamenmap(
+  bbox = c(left = coordDict[['minLon']], bottom = coordDict[['minLat']], right = coordDict[['maxLon']], top = coordDict[['maxLat']]), # the bounding box
+  zoom = 8, # zoom lvl; higher number = more detail (but also more processing power)
+  maptype = 'terrain-background'# type of basemap; 'terrain' is my default, but check help(get_stamenmap) for a full list
+)
+# Plot the map
+map <- ggmap(map_obj, legend = "right")
+map
 
 
+#### Make larger map ---------------------
+library(deltamapr)
+# https://stackoverflow.com/questions/34153462/plot-spatiallinesdataframe-with-ggplot2
+contour1b <- fortify(contour1)
+ggplot(contour1b, aes(x = long, y = lat, group = group)) + geom_path() + theme_classic() + coord_map()
 
+(map2 <- map +
+    geom_sf(data = delta_4326, fill = NA, inherit.aes = FALSE) +
+    geom_sf(data = WW_Delta, fill = "lightblue", color = "lightblue", inherit.aes = FALSE) +
+    geom_sf(data = nodes_4326, size = 0.5, inherit.aes = FALSE) +
+    geom_path(data = contour1b, aes(x = long, y = lat, group  = group), color = "red", inherit.aes = FALSE) +
+    annotation_north_arrow(location = "tr", which_north = "true",
+                           pad_x = unit(.1, "in"), pad_y = unit(0.2, "in"),
+                           style = north_arrow_fancy_orienteering) +
+    annotation_scale(location = "bl", bar_cols = c("black", "white", "black", "white")) +
+    theme_classic())
 
+(map3 <- ggplot() +
+    geom_sf(data = delta_4326, fill = NA, inherit.aes = FALSE) +
+    geom_sf(data = WW_Delta, fill = "lightblue", color = "lightblue", inherit.aes = FALSE) +
+    geom_sf(data = nodes_4326, size = 0.5, inherit.aes = FALSE) +
+    geom_path(data = contour1b, aes(x = long, y = lat, group  = group), color = "red", inherit.aes = FALSE) +
+    annotation_north_arrow(location = "tr", which_north = "true",
+                           pad_x = unit(.1, "in"), pad_y = unit(0.2, "in"),
+                           style = north_arrow_fancy_orienteering) +
+    annotation_scale(location = "bl", bar_cols = c("black", "white", "black", "white")) +
+    theme_classic())
 
+### Export Map ---------------------
 
+map_final
+ggsave("StationMap.jpeg", width = 8, height = 5, device = 'jpeg', dpi = 300)
 
-
-### You can ignore this, I was trying to rasterize the data, but I don't think I actually have to
-### Still leaving it in for now.
-
-### Rasterize
-
-
-Rasterize_all <- function(data, var, n=500){
-  var<-rlang::enquo(var)
-  rlang::as_name(var)
-  preds<-purrr::map(unique(data$Flow),
-             function(x) st_rasterize(data%>%
-                                        filter(Flow==x)%>%
-                                        dplyr::select(!!var),
-                                      template=st_as_stars(st_bbox(delta),
-                                    dx=diff(st_bbox(delta)[c(1, 3)])/n,
-                                    dy=diff(st_bbox(delta)[c(2, 4)])/n,
-                                    values = NA_real_)))
-  return(preds)
-  # Then bind all Anomalies together into 1 raster
-  out <- exec(c, !!!preds, along=list(Anomaly=unique(data$Anomaly)))
-  return(out)
-}
-
-raster_data <- Rasterize_all(may_node, May)
-
-# raster_data2 <- st_rasterize(may_node$May,
-#                             template = st_as_stars(st_bbox(delta)),
-#                             dx=diff(st_bbox(delta)[c(1, 3)])/n,
-#                             dy=diff(st_bbox(delta)[c(2, 4)])/n,
-#                             values = NA_real_)
-
-
-
-(raster_data$May)
-
-summary(raster_data)
-min(raster_data)
-plot(raster_data[[1]])
-raster_data[1]
-
-
-
-### Contour
-
-contour_data <- st_contour(raster_data,
-                           na.rm = TRUE,
-                           contour_lines = TRUE,
-                           breaks = 0.10)
-
-plot(contour_data)
