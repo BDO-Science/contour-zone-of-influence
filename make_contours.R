@@ -1,5 +1,13 @@
+#### make_contours.R ######
+#### Catarina Pien and Lisa Elliott
+
+# This code uses zone of influence modeling results (DSM2) to create contours showing
+#  how zone of influence changes from operational facilities based on pumping
+#  Contour lines of a specific level are then compared between different flow levels
+#  to indicate how changing OMR will influence the zone of influence.
 
 # Packages
+# general
 library(dplyr)
 library(ggplot2)
 library(tidyr)
@@ -36,18 +44,13 @@ nodes <- st_read("shapefiles/nodes.shp") %>%
 dropNodes <- c(146, 147, 148, 206, 242, 246)
 nodes <- nodes[!nodes$node %in% dropNodes, ]
 
-# Change all to 4326
+# Change all to 4326 (WGS)
 delta_4326 <- st_transform(delta, crs = 4326)
 nodes_4326 <- st_transform(nodes, crs = st_crs(delta_4326))
-
-# Month <- "May" #CHANGE THIS TO DESIRED MONTH
-
-## Join nodes with zoi data
-# month <- zoi_data %>% dplyr::select(Flow, node, Month) %>%
-#   rename(DSM2 = May)
-# month_node <- inner_join(nodes_4326, month) %>%
-#   mutate(DSM2 = ifelse(DSM2<0, NA, DSM2)) %>%
-#   na.omit()# may be some missing
+WW_Delta_4326 <- st_transform(WW_Delta, crs = st_crs(delta_4326))
+WW_Delta_crop <- st_crop(WW_Delta_4326,xmin = -122.2, xmax = -121, ymin = 37.5, ymax = 38.8) %>%
+  filter(HNAME!= "SAN FRANCISCO BAY")
+plot(WW_Delta_crop)
 
 # Functions ------------------------------------
 
@@ -95,9 +98,39 @@ interp_nodes <- function(df, mask=delta_sp) {
 
 }
 
+# Map making function
+# @mon = month, lower case (feb, mar, apr, may)
+# @clevel = contour level (0.75, 0.95)
+# produces map
+
+mon = "apr"
+clevel = 0.75
+
+make_map <- function(mon, clevel){
+
+  # Make a dataset that filters contours for month and contour level of interest. This needs to run
+  # after you have already made the contours_all file (run all the contours and combine)
+  contourMonth <- contours_all %>%
+    filter(month == mon & contour == clevel) %>%
+    mutate(grouper = paste0(group, "_", flow))
+
+  # Map not including basemap
+  (ggplot() +
+      #geom_sf(data = delta_4326, fill = NA, inherit.aes = FALSE) +
+      geom_sf(data = WW_Delta_crop, fill = "lightskyblue2", color = "lightskyblue2", alpha = 0.7, inherit.aes = FALSE) +
+      geom_sf(data = nodes_4326, size = 0.4, color = "gray30", inherit.aes = FALSE) +
+      geom_path(data = contourMonth, aes(x = long, y = lat, group  = grouper, color= flow), size = 0.6, inherit.aes = FALSE) +
+      annotation_north_arrow(location = "tr", which_north = "true",
+                             pad_x = unit(.1, "in"), pad_y = unit(0.2, "in"),
+                             style = north_arrow_fancy_orienteering) +
+      annotation_scale(location = "bl", bar_cols = c("black", "white", "black", "white")) +
+      scale_color_manual("Flow (cfs)", values = cpal[c(1,2,3,4,5)]) +
+      labs(title = paste(mon, "contour", clevel))+
+      theme_classic())
+}
+
 # Analysis ------------------------------
 ## Create data frames --------------------
-flows = c(1000,2000,3000,4000)
 
 ### May --------------
 may_1000_sp <- create_df(month = "May", flow = 1000)
@@ -183,7 +216,7 @@ contours_a <- c(c.apr1_75, c.apr1_95, c.apr2_75, c.apr2_95,c.apr3_75, c.apr3_95)
 
 contours_april <- lapply(contours_a, fortify) %>%
   bind_rows(.id = "id") %>%
-  mutate(month = "april") %>%
+  mutate(month = "apr") %>%
   mutate(flow = case_when(id %in% c(1,2) ~ -1000,
                           id %in% c(3,4) ~ -2000,
                           id %in% c(5,6) ~ -3000),
@@ -209,7 +242,7 @@ c.mar5_95 <- rasterToContour(r.mar5, levels = 0.95)
 c.mar5_75 <- rasterToContour(r.mar5, levels = 0.75)
 
 contours_mr <- c(c.mar1_75, c.mar1_95, c.mar2_75, c.mar2_95,
-                c.mar3_75, c.mar3_95, c.mar4_75, c.mar4_95, 
+                c.mar3_75, c.mar3_95, c.mar4_75, c.mar4_95,
                 c.mar5_75, c.mar5_95)
 
 contours_mar <- lapply(contours_mr, fortify) %>%
@@ -224,31 +257,71 @@ contours_mar <- lapply(contours_mr, fortify) %>%
                              id %in% c(2,4,6,8, 10) ~ 0.95))
 
 
-
-
 ### Combine all
+# switching factor levels will allow color palette to work right
 contours_all <- rbind(contours_april, contours_may, contours_mar) %>%
-  mutate(flow = as.factor(flow))
+  mutate(flow = factor(flow, levels = c("-1000", "-2000", "-3000", "-4000", "-5000")))
 
-
-# Plot -----------------------
-
-## Make basemap (ggmap) -----------------
-
-coords <- data.frame(st_coordinates(delta_4326))
-
-
-
-## Make larger map ---------------------
+# Make map -----------------------
 
 # https://stackoverflow.com/questions/34153462/plot-spatiallinesdataframe-with-ggplot2
+
+# Define color palette
+cpal <- RColorBrewer::brewer.pal(6, "YlOrBr")[2:6]
+
+# Run make_map function to make maps (see documentation above)
+(map_may_75 <- make_map(mon = "may", clevel = 0.75))
+(map_apr_75 <- make_map(mon = "apr", clevel = 0.75))
+(map_may_95 <- make_map(mon = "may", clevel =  0.95))
+
+
+# Export Maps ---------------------
+
+map_may_75
+ggsave("maps/May75.png", width = 6, height = 6, device = 'png', dpi = 300)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Old code
 
 
 contourMay <- contours_all %>%
   filter(month == "may" & contour == 0.75) %>%
   mutate(grouper = paste0(group, "_", flow))
 
-may_colors <- rev(RColorBrewer::brewer.pal(6, "YlOrBr")[2:5])
+
+
 # Map not including basemap
 (map3 <- ggplot() +
     geom_sf(data = delta_4326, fill = NA, inherit.aes = FALSE) +
@@ -263,11 +336,6 @@ may_colors <- rev(RColorBrewer::brewer.pal(6, "YlOrBr")[2:5])
     labs(title = "May Contour 0.75")+
     theme_classic())
 
-
-## Export Map ---------------------
-
-map3
-ggsave("maps/May75_drop.jpeg", width = 7, height = 6, device = 'jpeg', dpi = 300)
 
 
 ##Apr Map
@@ -317,15 +385,23 @@ mar_colors <- rev(RColorBrewer::brewer.pal(6, "YlOrBr")[2:6])
     theme_classic())
 
 
-## Export Map ---------------------
+## Export Map
 
 map5
 ggsave("maps/Mar75_drop.jpeg", width = 7, height = 6, device = 'jpeg', dpi = 300)
 
 
 
+# Month <- "May" #CHANGE THIS TO DESIRED MONTH
 
-# Old code
+## Join nodes with zoi data
+# month <- zoi_data %>% dplyr::select(Flow, node, Month) %>%
+#   rename(DSM2 = May)
+# month_node <- inner_join(nodes_4326, month) %>%
+#   mutate(DSM2 = ifelse(DSM2<0, NA, DSM2)) %>%
+#   na.omit()# may be some missing
+
+
 ### IDW
 
 
@@ -362,6 +438,10 @@ tm_shape(r.m1) +
             title="Data") +
   tm_shape(month_1000_sp) + tm_dots(size=0.05) +
   tm_legend(legend.outside=TRUE)
+
+## Make basemap (ggmap)
+
+coords <- data.frame(st_coordinates(delta_4326))
 
 ##
 # Define coordinate bounding box. You could also use numbers if you want.
