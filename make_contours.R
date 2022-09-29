@@ -45,8 +45,10 @@ dropNodes <- c(146, 147, 148, 206, 242, 246)
 nodes <- nodes[!nodes$node %in% dropNodes, ]
 
 # Change all to 4326 (WGS)
-delta_4326 <- st_transform(delta, crs = 4326)
-nodes_4326 <- st_transform(nodes, crs = st_crs(delta_4326))
+delta_4326 <- st_transform(delta, crs = 4326) %>%
+  mutate(line = "analysis boundary")
+nodes_4326 <- st_transform(nodes, crs = st_crs(delta_4326)) %>%
+  mutate(points = "DSM2 nodes")
 WW_Delta_4326 <- st_transform(WW_Delta, crs = st_crs(delta_4326))
 WW_Delta_crop <- st_crop(WW_Delta_4326,xmin = -122.2, xmax = -121, ymin = 37.5, ymax = 38.8) %>%
   filter(HNAME!= "SAN FRANCISCO BAY")
@@ -101,10 +103,7 @@ interp_nodes <- function(df, mask=delta_sp) {
 # Map making function
 # @mon = month, lower case (feb, mar, apr, may)
 # @clevel = contour level (0.75, 0.95)
-# produces map
-
-mon = "apr"
-clevel = 0.75
+# produces map and saves it based on the mon the contour level
 
 make_map <- function(mon, clevel){
 
@@ -115,8 +114,8 @@ make_map <- function(mon, clevel){
     mutate(grouper = paste0(group, "_", flow))
 
   # Map not including basemap
-  (ggplot() +
-      geom_sf(data = delta_4326, fill = NA, inherit.aes = FALSE, linetype = "dashed") +
+  map <- ggplot() +
+      geom_sf(data = delta_4326, aes(linetype = line), fill = NA, inherit.aes = FALSE) +
       geom_sf(data = WW_Delta_crop, fill = "lightskyblue2", color = "lightskyblue2", alpha = 0.7, inherit.aes = FALSE) +
       geom_sf(data = nodes_4326, size = 0.4, color = "gray30", inherit.aes = FALSE) +
       geom_path(data = contourMonth, aes(x = long, y = lat, group  = grouper, color= flow), size = 0.6, inherit.aes = FALSE) +
@@ -125,8 +124,16 @@ make_map <- function(mon, clevel){
                              style = north_arrow_fancy_orienteering) +
       annotation_scale(location = "bl", bar_cols = c("black", "white", "black", "white")) +
       scale_color_manual("Flow (cfs)", values = cpal[c(1,2,3,4,5)]) +
+      scale_linetype_manual(name = NULL, values = "dashed") +
       labs(title = paste(mon, "contour", clevel))+
-      theme_classic())
+      theme_classic()+
+      theme(axis.text = element_blank(),
+            axis.title = element_blank(),
+            axis.ticks = element_blank())
+
+  map
+   ggsave(paste0("maps/", mon, "_", substr(clevel,3,4), ".png"), width = 6, height = 6, device = 'png', dpi = 300)
+
 }
 
 
@@ -365,27 +372,18 @@ contours_all <- rbind(contours_april, contours_may, contours_mar, contours_feb, 
 # Define color palette
 cpal <- RColorBrewer::brewer.pal(6, "YlOrBr")[2:6]
 
-# Run make_map function to make maps (see documentation above)
-(map_may_75 <- make_map(mon = "may", clevel = 0.75))
-(map_apr_75 <- make_map(mon = "apr", clevel = 0.75))
-(map_mar_75 <- make_map(mon = "mar", clevel = 0.75))
-(map_feb_75 <- make_map(mon = "feb", clevel = 0.75))
-(map_jan_75 <- make_map(mon = "jan", clevel = 0.75))
+# Run make_map function to make maps and save (see documentation above)
+make_map(mon = "may", clevel = 0.75)
+make_map(mon = "apr", clevel = 0.75)
+make_map(mon = "mar", clevel = 0.75)
+make_map(mon = "feb", clevel = 0.75)
+make_map(mon = "jan", clevel = 0.75)
 
-(map_may_95 <- make_map(mon = "may", clevel =  0.95))
-(map_apr_95 <- make_map(mon = "apr", clevel =  0.95))
-(map_mar_95 <- make_map(mon = "mar", clevel =  0.95))
-(map_feb_95 <- make_map(mon = "feb", clevel =  0.95))
-(map_jan_95 <- make_map(mon = "jan", clevel =  0.95))
-
-
-# Export Maps ---------------------
-
-map_jan_75
-ggsave("maps/Jan75.png", width = 6, height = 6, device = 'png', dpi = 300)
-
-
-
+make_map(mon = "may", clevel =  0.95)
+make_map(mon = "apr", clevel =  0.95)
+make_map(mon = "mar", clevel =  0.95)
+make_map(mon = "feb", clevel =  0.95)
+make_map(mon = "jan", clevel =  0.95)
 
 
 
@@ -583,13 +581,13 @@ map
 
 legend("topright",legend=c("Delta Boundary", "Waterways", "DSM2 Nodes"),
        pch = c(NA, 15, 16),
-       col=c("gray30",  "black", "lightskyblue2"), 
-       lty= c("dashed", NA, NA), cex=0.8, xpd = TRUE, horiz = TRUE) + 
-  
+       col=c("gray30",  "black", "lightskyblue2"),
+       lty= c("dashed", NA, NA), cex=0.8, xpd = TRUE, horiz = TRUE) +
+
   ggplot() +
-  geom_sf(data = delta_4326, aes(geometry = geometry, color = "Black"), 
+  geom_sf(data = delta_4326, aes(geometry = geometry, color = "Black"),
           fill = NA, linetype = "dashed", show.legend = "line") +
-  geom_sf(data = WW_Delta_crop, aes(geometry = geometry, fill = "TYPE"), 
+  geom_sf(data = WW_Delta_crop, aes(geometry = geometry, fill = "TYPE"),
           fill = "lightskyblue2", color = "lightskyblue2", alpha = 0.7, show.legend = "polygon", inherit.aes = FALSE) +
   geom_sf(data = nodes_4326, aes(geometry = geometry), size = 0.4, color = "gray30", show.legend = "point", inherit.aes = FALSE) +
   #geom_path(data = contourMonth, aes(x = long, y = lat, group  = grouper, color= flow), size = 0.6, inherit.aes = FALSE) +
