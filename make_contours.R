@@ -116,7 +116,7 @@ make_map <- function(mon, clevel){
 
   # Map not including basemap
   (ggplot() +
-      #geom_sf(data = delta_4326, fill = NA, inherit.aes = FALSE) +
+      geom_sf(data = delta_4326, fill = NA, inherit.aes = FALSE, linetype = "dashed") +
       geom_sf(data = WW_Delta_crop, fill = "lightskyblue2", color = "lightskyblue2", alpha = 0.7, inherit.aes = FALSE) +
       geom_sf(data = nodes_4326, size = 0.4, color = "gray30", inherit.aes = FALSE) +
       geom_path(data = contourMonth, aes(x = long, y = lat, group  = grouper, color= flow), size = 0.6, inherit.aes = FALSE) +
@@ -128,6 +128,7 @@ make_map <- function(mon, clevel){
       labs(title = paste(mon, "contour", clevel))+
       theme_classic())
 }
+
 
 # Analysis ------------------------------
 ## Create data frames --------------------
@@ -380,8 +381,8 @@ cpal <- RColorBrewer::brewer.pal(6, "YlOrBr")[2:6]
 
 # Export Maps ---------------------
 
-map_may_95
-ggsave("maps/May95.png", width = 6, height = 6, device = 'png', dpi = 300)
+map_jan_75
+ggsave("maps/Jan75.png", width = 6, height = 6, device = 'png', dpi = 300)
 
 
 
@@ -579,3 +580,25 @@ map
     scale_color_brewer("Flow", palette = "YlOrBr", direction = -1)+
     labs(title = "May Contour 0.75")+
     theme_classic())
+
+legend("topright",legend=c("Delta Boundary", "Waterways", "DSM2 Nodes"),
+       pch = c(NA, 15, 16),
+       col=c("gray30",  "black", "lightskyblue2"), 
+       lty= c("dashed", NA, NA), cex=0.8, xpd = TRUE, horiz = TRUE) + 
+  
+  ggplot() +
+  geom_sf(data = delta_4326, aes(geometry = geometry, color = "Black"), 
+          fill = NA, linetype = "dashed", show.legend = "line") +
+  geom_sf(data = WW_Delta_crop, aes(geometry = geometry, fill = "TYPE"), 
+          fill = "lightskyblue2", color = "lightskyblue2", alpha = 0.7, show.legend = "polygon", inherit.aes = FALSE) +
+  geom_sf(data = nodes_4326, aes(geometry = geometry), size = 0.4, color = "gray30", show.legend = "point", inherit.aes = FALSE) +
+  #geom_path(data = contourMonth, aes(x = long, y = lat, group  = grouper, color= flow), size = 0.6, inherit.aes = FALSE) +
+  annotation_north_arrow(location = "tr", which_north = "true",
+                         pad_x = unit(.1, "in"), pad_y = unit(0.2, "in"),
+                         style = north_arrow_fancy_orienteering) +
+  annotation_scale(location = "bl", bar_cols = c("black", "white", "black", "white")) +
+  #scale_color_manual("Legend", values = cpal[c(1,2,3,4,5)]) +
+  scale_color_manual("Legend", values = c("black", "lightskyblue2", "gray30"), labels = c("Delta Boundary", "Waterways", "DSM2 Nodes"))
+scale_linetype_manual("Legend", values = c("dashed", NA, NA)) +
+  labs(title = paste(mon, "contour", clevel)) +
+  theme_classic()
