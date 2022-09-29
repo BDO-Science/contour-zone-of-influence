@@ -150,6 +150,20 @@ mar_3000_sp <- create_df(month = "Mar", flow = 3000)
 mar_4000_sp <- create_df(month = "Mar", flow = 4000)
 mar_5000_sp <- create_df(month = "Mar", flow = 5000)
 
+### February --------------
+feb_1000_sp <- create_df(month = "Feb", flow = 1000)
+feb_2000_sp <- create_df(month = "Feb", flow = 2000)
+feb_3000_sp <- create_df(month = "Feb", flow = 3000)
+feb_4000_sp <- create_df(month = "Feb", flow = 4000)
+feb_5000_sp <- create_df(month = "Feb", flow = 5000)
+
+### January --------------
+jan_1000_sp <- create_df(month = "Jan", flow = 1000)
+jan_2000_sp <- create_df(month = "Jan", flow = 2000)
+jan_3000_sp <- create_df(month = "Jan", flow = 3000)
+jan_4000_sp <- create_df(month = "Jan", flow = 4000)
+jan_5000_sp <- create_df(month = "Jan", flow = 5000)
+
 ## Create interpolations -------------------
 
 delta_sp <- as(delta_4326, "Spatial")
@@ -171,6 +185,20 @@ r.mar2 <- interp_nodes(mar_2000_sp)
 r.mar3 <- interp_nodes(mar_3000_sp)
 r.mar4 <- interp_nodes(mar_4000_sp)
 r.mar5 <- interp_nodes(mar_5000_sp)
+
+### February --------------
+r.feb1 <- interp_nodes(feb_1000_sp)
+r.feb2 <- interp_nodes(feb_2000_sp)
+r.feb3 <- interp_nodes(feb_3000_sp)
+r.feb4 <- interp_nodes(feb_4000_sp)
+r.feb5 <- interp_nodes(feb_5000_sp)
+
+### February --------------
+r.jan1 <- interp_nodes(jan_1000_sp)
+r.jan2 <- interp_nodes(jan_2000_sp)
+r.jan3 <- interp_nodes(jan_3000_sp)
+r.jan4 <- interp_nodes(jan_4000_sp)
+r.jan5 <- interp_nodes(jan_5000_sp)
 
 ## Create contours --------------------------
 
@@ -256,10 +284,77 @@ contours_mar <- lapply(contours_mr, fortify) %>%
          contour = case_when(id %in% c(1,3, 5,7, 9) ~ 0.75,
                              id %in% c(2,4,6,8, 10) ~ 0.95))
 
+### February --------------------------
+c.feb1_95 <- rasterToContour(r.feb1, levels = 0.95)
+plot(c.feb1_95)
+c.feb1_75 <- rasterToContour(r.feb1, levels = 0.75)
+plot(c.feb1_75)
+
+c.feb2_95 <- rasterToContour(r.feb2, levels = 0.95)
+c.feb2_75 <- rasterToContour(r.feb2, levels = 0.75)
+
+c.feb3_95 <- rasterToContour(r.feb3, levels = 0.95)
+c.feb3_75 <- rasterToContour(r.feb3, levels = 0.75)
+
+c.feb4_95 <- rasterToContour(r.feb4, levels = 0.95)
+c.feb4_75 <- rasterToContour(r.feb4, levels = 0.75)
+
+c.feb5_95 <- rasterToContour(r.feb5, levels = 0.95)
+c.feb5_75 <- rasterToContour(r.feb5, levels = 0.75)
+
+contours_f <- c(c.feb1_75, c.feb1_95, c.feb2_75, c.feb2_95,
+                 c.feb3_75, c.feb3_95, c.feb4_75, c.feb4_95,
+                 c.feb5_75, c.feb5_95)
+
+contours_feb <- lapply(contours_f, fortify) %>%
+  bind_rows(.id = "id") %>%
+  mutate(month = "feb") %>%
+  mutate(flow = case_when(id %in% c(1,2) ~ -1000,
+                          id %in% c(3,4) ~ -2000,
+                          id %in% c(5,6) ~ -3000,
+                          id %in% c(7,8) ~ -4000,
+                          id %in% c(9,10) ~ -5000),
+         contour = case_when(id %in% c(1,3, 5,7, 9) ~ 0.75,
+                             id %in% c(2,4,6,8, 10) ~ 0.95))
+
+###January --------------------------
+c.jan1_95 <- rasterToContour(r.jan1, levels = 0.95)
+plot(c.jan1_95)
+c.jan1_75 <- rasterToContour(r.jan1, levels = 0.75)
+plot(c.jan1_75)
+
+c.jan2_95 <- rasterToContour(r.jan2, levels = 0.95)
+c.jan2_75 <- rasterToContour(r.jan2, levels = 0.75)
+
+c.jan3_95 <- rasterToContour(r.jan3, levels = 0.95)
+c.jan3_75 <- rasterToContour(r.jan3, levels = 0.75)
+
+c.jan4_95 <- rasterToContour(r.jan4, levels = 0.95)
+c.jan4_75 <- rasterToContour(r.jan4, levels = 0.75)
+
+c.jan5_95 <- rasterToContour(r.jan5, levels = 0.95)
+c.jan5_75 <- rasterToContour(r.jan5, levels = 0.75)
+
+contours_j <- c(c.jan1_75, c.jan1_95, c.jan2_75, c.jan2_95,
+                 c.jan3_75, c.jan3_95, c.jan4_75, c.jan4_95,
+                 c.jan5_75, c.jan5_95)
+
+contours_jan <- lapply(contours_j, fortify) %>%
+  bind_rows(.id = "id") %>%
+  mutate(month = "jan") %>%
+  mutate(flow = case_when(id %in% c(1,2) ~ -1000,
+                          id %in% c(3,4) ~ -2000,
+                          id %in% c(5,6) ~ -3000,
+                          id %in% c(7,8) ~ -4000,
+                          id %in% c(9,10) ~ -5000),
+         contour = case_when(id %in% c(1,3, 5,7, 9) ~ 0.75,
+                             id %in% c(2,4,6,8, 10) ~ 0.95))
+
+
 
 ### Combine all
 # switching factor levels will allow color palette to work right
-contours_all <- rbind(contours_april, contours_may, contours_mar) %>%
+contours_all <- rbind(contours_april, contours_may, contours_mar, contours_feb, contours_jan) %>%
   mutate(flow = factor(flow, levels = c("-1000", "-2000", "-3000", "-4000", "-5000")))
 
 # Make map -----------------------
@@ -272,13 +367,21 @@ cpal <- RColorBrewer::brewer.pal(6, "YlOrBr")[2:6]
 # Run make_map function to make maps (see documentation above)
 (map_may_75 <- make_map(mon = "may", clevel = 0.75))
 (map_apr_75 <- make_map(mon = "apr", clevel = 0.75))
+(map_mar_75 <- make_map(mon = "mar", clevel = 0.75))
+(map_feb_75 <- make_map(mon = "feb", clevel = 0.75))
+(map_jan_75 <- make_map(mon = "jan", clevel = 0.75))
+
 (map_may_95 <- make_map(mon = "may", clevel =  0.95))
+(map_apr_95 <- make_map(mon = "apr", clevel =  0.95))
+(map_mar_95 <- make_map(mon = "mar", clevel =  0.95))
+(map_feb_95 <- make_map(mon = "feb", clevel =  0.95))
+(map_jan_95 <- make_map(mon = "jan", clevel =  0.95))
 
 
 # Export Maps ---------------------
 
-map_may_75
-ggsave("maps/May75.png", width = 6, height = 6, device = 'png', dpi = 300)
+map_may_95
+ggsave("maps/May95.png", width = 6, height = 6, device = 'png', dpi = 300)
 
 
 
