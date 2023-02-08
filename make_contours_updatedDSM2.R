@@ -34,7 +34,8 @@ library(viridis)
 
 # Read/Join data ---------------------------------------------------------
 delta <- st_read("shapefiles/Bay_Delta_Poly_New.shp")
-zoi_file = list.files("data_updatedDSM2", pattern = "NAA_.*csv$", full.names = TRUE)
+zoi_file_NAA = list.files("data_updatedDSM2", pattern = "NAA_.*csv$", full.names = TRUE)
+#zoi_file_D1641
 zoi_data <- lapply(zoi_file, read_csv) %>%
   bind_rows(.id = "id") %>%
   mutate(id = substr(zoi_file[as.numeric(id)], 41, 44)) %>%
@@ -89,15 +90,29 @@ create_df <- function(month, flow) {
 f_filter_similarity <- function(df) {
   # figure out the downstream nodes that correspond to upstream %sim of 0.7 or greater
   tokeep <- df %>%
-    mutate(include1 = ifelse(DSM2 < 0.7, "Y", "N")) %>%
-    filter(include1 == "Y") %>%
-    pivot_longer(cols = c(upnode, downnode), values_to = "nodestokeep") %>%
-    st_drop_geometry()
+  mutate(include1 = ifelse(DSM2 < 0.7, "Y", "N")) %>%
+  filter(include1 == "Y") %>%
+  pivot_longer(cols = c(upnode, downnode), values_to = "nodestokeep") %>%
+  st_drop_geometry()
   nodestokeep <- unique(tokeep$nodestokeep)
 
   # do the actual filtering of nodes
   filtered_month <- df %>%
     filter(node %in% nodestokeep)
+
+  # filtered_month <- df %>%
+  #   filter(DSM2 < 0.7)
+
+  return(filtered_month)
+}
+
+
+# Filter to correct similarity level (e.g. 0.7)
+f_filter_similarity2 <- function(df) {
+
+
+  filtered_month <- df %>%
+  filter(DSM2 < 0.7)
 
   return(filtered_month)
 }
@@ -167,12 +182,22 @@ df <- list(dec_2000_sp, dec_3500_sp, dec_5000_sp, dec_6500_sp,
            jun_2000_sp, jun_3500_sp, jun_5000_sp)
 
 ## Loop it ---------------------------------------
-filtered <- lapply(df, f_filter_similarity) %>%
+# filtered <- lapply(df, f_filter_similarity) %>%
+#   bind_rows() %>%
+#   mutate(Flow = as.factor(as.numeric(Flow) * -1))
+
+### This one should be filtering correctly
+filtered_try2 <- lapply(df, f_filter_similarity2) %>%
   bind_rows() %>%
   mutate(Flow = as.factor(as.numeric(Flow) * -1))
 
+# filtered_try2 <- list()
+# for(r in 1:nrow(df)){
+#   filtered_try2[r] <- filter(as.data.frame(df[r]), DSM2 < 0.7)
+# }
+
 # Calculate total length -------------------------
-filtered2 <- filtered %>%
+filtered2 <- filtered_try2 %>%
   group_by(Month, Flow) %>%
   summarize(sumLength = sum(length_feet))%>%
   ungroup() %>%
