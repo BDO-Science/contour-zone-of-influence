@@ -36,9 +36,9 @@ library(viridis)
 delta <- st_read("shapefiles/Bay_Delta_Poly_New.shp")
 zoi_file_NAA = list.files("data_updatedDSM2", pattern = "NAA_.*csv$", full.names = TRUE)
 #zoi_file_D1641
-zoi_data <- lapply(zoi_file, read_csv) %>%
+zoi_data <- lapply(zoi_file_NAA, read_csv) %>%
   bind_rows(.id = "id") %>%
-  mutate(id = substr(zoi_file[as.numeric(id)], 41, 44)) %>%
+  mutate(id = substr(zoi_file_NAA[as.numeric(id)], 41, 44)) %>%
   rename(Flow = id)
 nodes <- st_read("shapefiles/nodes.shp") %>%
   dplyr::select(node)
@@ -217,6 +217,8 @@ ggplot() +
   theme(axis.text.x = element_text(angle = 90))
 
 
+# feb <- filtered2%>%
+#   filter(Month == "Feb")
 ## Visualize differences -------------------
 ggplot(filtered2) +
   geom_col(aes(Month, sumLength, fill = Flow), position = "dodge2")  +
