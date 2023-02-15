@@ -217,14 +217,42 @@ ggplot() +
   theme(axis.text.x = element_text(angle = 90))
 
 
-# feb <- filtered2%>%
-#   filter(Month == "Feb")
+
 ## Visualize differences -------------------
 ggplot(filtered2) +
   geom_col(aes(Month, sumLength, fill = Flow), position = "dodge2")  +
   labs(y = "Sum Channel Length") +
   viridis::scale_fill_viridis(discrete = TRUE) +
   theme_bw()
+
+
+
+
+### Look at February
+feb <- filtered_try2%>%
+  filter(Month == "Feb")
+
+feb_wide <- feb %>%
+  select(-upnode, -channel_number) %>%
+  pivot_wider( values_from= c("length_feet","DSM2"), names_from = "Flow")
+
+feb235 <- feb_2000_sp %>%
+  st_drop_geometry() %>%
+  select(-points, -channel_number, -Flow) %>%
+  rename(DSM2_2000 =DSM2) %>%
+  full_join(feb_3500_sp %>% st_drop_geometry(), by = c("upnode", "downnode", "Month", "node")) %>%
+  select(-points, -channel_number, -Flow) %>%
+  rename(DSM2_3500 = DSM2) %>%
+  full_join(feb_5000_sp %>% st_drop_geometry(), by = c("upnode", "downnode", "Month", "node")) %>%
+  st_drop_geometry() %>%
+  rename(DSM2_5000 = DSM2) %>%
+  select(-points, -channel_number, -Flow) %>%
+  mutate(diff = ifelse(DSM2_3500 <0.7 & DSM2_5000 >=0.7, "diff", "0")) %>%
+  #mutate(diff = ifelse(DSM2_3500 < DSM2_5000, "diff", "0")) %>%
+  mutate(DSM2_3500 = round(DSM2_3500, 3),
+         DSM2_5000 = round(DSM2_5000, 3)) %>%
+  select(node, upnode, downnode, length_2000 = length_feet.y, length_3500 = length_feet.x,
+         length_5000 = length_feet, DSM2_2000, DSM2_3500, DSM2_5000, diff)
 
 ######### Cat ended here ##############################
 
@@ -236,3 +264,9 @@ ggplot(filtered2) +
 # Think about why 3500 seems to be greater than 5000.
 # Do we need to draw lines at all?
 # Export table
+
+
+# Total delta outflow could be different even though OMR is the same
+# Standardize ZOI by inflow
+# Across a range of inflows and OMR flows how does the ZOI change
+# We don't pump this negative when we could have a larger ZOI
