@@ -33,7 +33,8 @@ flow.dat <- read.csv("data_inflow/Inflow.csv")
 
 Sac.quant <- quantile(flow.dat$Sac.cfs, probs = c(0.25, 0.5, 0.75))
 Sjr.quant <- quantile(flow.dat$SJR.cfs, probs = c(0.25, 0.5, 0.75))
-
+# Sac.quant <- quantile(flow.dat$Sac.cfs, probs = c(0.2, 0.5, 0.8))
+# Sjr.quant <- quantile(flow.dat$SJR.cfs, probs = c(0.2, 0.5, 0.8))
 
 Flow.subset <- transform(flow.dat, Sub.group = ifelse(Sac.cfs <=  1.2*Sac.quant[[2]] &
                                                         Sac.cfs >=  0.8*Sac.quant[[2]] &
@@ -69,6 +70,29 @@ Flow.sum <- Flow.subset %>%
 
 Flow.sum
 
+
+## Added: plot the subsetted data to check -----------------------------------
+library(ggplot2)
+library(viridis)
+
+plot.subsetted <- ggplot(Flow.subset) +
+  geom_point(aes(x = Sac.cfs, y = SJR.cfs, color = Sub.group, shape = factor(OMR)), size = 3) +
+  geom_vline(xintercept = Sac.quant[[2]], linetype = "dashed") +
+  geom_hline(yintercept = Sjr.quant[[2]], linetype = "dashed") +
+  labs(x = "Sacramento Inflow (cfs)", y = "SJR Inflow (cfs)") +
+  scale_color_viridis(option = "turbo", discrete = TRUE) +
+  theme_bw()
+
+png(filename = here::here("figures", "plot_subsetteddata_quantiles.png"),
+    width = 7, height = 5, units = "in",
+    pointsize = 12, family = "sans", res = 300)
+plot.subsetted
+dev.off()
+
+
+
+
+
 ### Alternatively subset Directly ##
 Flow.subset <- subset(flow.dat, Sac.cfs <=  1.2*Sac.quant[[2]] &
                         Sac.cfs >=  0.8*Sac.quant[[2]] &
@@ -97,23 +121,12 @@ Flow.subset <- subset(flow.dat, Sac.cfs <=  1.2*Sac.quant[[2]] &
 
 nrow(Flow.subset)
 
-## Added: plot the subsetted data to check -----------------------------------
-library(ggplot2)
-library(viridis)
-ggplot(Flow.subset) +
-  geom_point(aes(x = Sac.cfs, y = SJR.cfs, color = Sub.group, shape = factor(OMR)), size = 3) +
-  geom_vline(xintercept = Sac.quant[[2]], linetype = "dashed") +
-  geom_hline(yintercept = Sjr.quant[[2]], linetype = "dashed") +
-  labs(x = "Sacramento Inflow (cfs)", y = "SJR Inflow (cfs)") +
-  scale_color_viridis(option = "turbo", discrete = TRUE) +
-  theme_bw()
-
 
 ########################################################
 ################## Quantile Plot #######################
 ########################################################
 
-jpeg(filename = "Quantile_subset.jpg", heigh=7.5, width = 5.5, units="in", bg="white", res=500)
+jpeg(filename = "figures/Quantile_subset.jpg", height=7.5, width = 5.5, units="in", bg="white", res=500)
 
 par(mfrow=c(2,1), oma=c(3.25, 3.75, 0.5, 1), mar=c(0.25, 0.75, 0.25, 0.25), bty="l")
 
@@ -122,13 +135,13 @@ axis(1, at = c(20000, 40000, 60000, 80000), labels=FALSE)
 axis(2, at = c(0, 5000, 10000, 15000, 20000), las=1)
 
 polygon(c(0.8*Sac.quant[[2]], 1.2*Sac.quant[[2]], 1.2*Sac.quant[[2]], 0.8*Sac.quant[[2]]),
-        c(0.8*Sjr.quant[[2]], 0.8*Sjr.quant[[2]], 1.2*Sjr.quant[[2]], 1.2*Sjr.quant[[2]]), lty=2, border="purple")
+        c(0.8*Sjr.quant[[2]], 0.8*Sjr.quant[[2]], 1.2*Sjr.quant[[2]], 1.2*Sjr.quant[[2]]), lty=2, border="navy")
 
 polygon(c(0.8*Sac.quant[[2]], 1.2*Sac.quant[[2]], 1.2*Sac.quant[[2]], 0.8*Sac.quant[[2]]),
-        c(0.8*Sjr.quant[[1]], 0.8*Sjr.quant[[1]], 1.2*Sjr.quant[[1]], 1.2*Sjr.quant[[1]]), lty=2, border="purple")
+        c(0.8*Sjr.quant[[1]], 0.8*Sjr.quant[[1]], 1.2*Sjr.quant[[1]], 1.2*Sjr.quant[[1]]), lty=2, border="navy")
 
 polygon(c(0.8*Sac.quant[[2]], 1.2*Sac.quant[[2]], 1.2*Sac.quant[[2]], 0.8*Sac.quant[[2]]),
-        c(0.8*Sjr.quant[[3]], 0.8*Sjr.quant[[3]], 1.2*Sjr.quant[[3]], 1.2*Sjr.quant[[3]]), lty=2, border="purple")
+        c(0.8*Sjr.quant[[3]], 0.8*Sjr.quant[[3]], 1.2*Sjr.quant[[3]], 1.2*Sjr.quant[[3]]), lty=2, border="navy")
 
 
 #Sac quantiles
@@ -146,13 +159,13 @@ axis(1, at = c(20000, 40000, 60000, 80000))
 axis(2, at = c(0, 5000, 10000, 15000, 20000), las=1)
 
 polygon(c(0.8*Sac.quant[[2]], 1.2*Sac.quant[[2]], 1.2*Sac.quant[[2]], 0.8*Sac.quant[[2]]),
-        c(0.8*Sjr.quant[[2]], 0.8*Sjr.quant[[2]], 1.2*Sjr.quant[[2]], 1.2*Sjr.quant[[2]]), lty=2, border="purple")
+        c(0.8*Sjr.quant[[2]], 0.8*Sjr.quant[[2]], 1.2*Sjr.quant[[2]], 1.2*Sjr.quant[[2]]), lty=2, border="navy")
 
 polygon(c(0.8*Sac.quant[[1]], 1.2*Sac.quant[[1]], 1.2*Sac.quant[[1]], 0.8*Sac.quant[[1]]),
-        c(0.8*Sjr.quant[[2]], 0.8*Sjr.quant[[2]], 1.2*Sjr.quant[[2]], 1.2*Sjr.quant[[2]]), lty=2, border="purple")
+        c(0.8*Sjr.quant[[2]], 0.8*Sjr.quant[[2]], 1.2*Sjr.quant[[2]], 1.2*Sjr.quant[[2]]), lty=2, border="navy")
 
 polygon(c(0.8*Sac.quant[[3]], 1.2*Sac.quant[[3]], 1.2*Sac.quant[[3]], 0.8*Sac.quant[[3]]),
-        c(0.8*Sjr.quant[[2]], 0.8*Sjr.quant[[2]], 1.2*Sjr.quant[[2]], 1.2*Sjr.quant[[2]]), lty=2, border="purple")
+        c(0.8*Sjr.quant[[2]], 0.8*Sjr.quant[[2]], 1.2*Sjr.quant[[2]], 1.2*Sjr.quant[[2]]), lty=2, border="navy")
 
 
 #Sac quantiles
