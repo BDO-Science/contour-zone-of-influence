@@ -28,38 +28,69 @@ unique(flow.dat$OMR)
 ############### Quantile Subset ##############
 
 flow.dat <- read.csv("data_inflow/Inflow.csv")
+flow.months <- flow.dat %>%
+  dplyr::filter(Month %in% c(12, 1, 2, 3, 4, 5, 6))
 
 ###############
 
-Sac.quant <- quantile(flow.dat$Sac.cfs, probs = c(0.25, 0.5, 0.75))
-Sjr.quant <- quantile(flow.dat$SJR.cfs, probs = c(0.25, 0.5, 0.75))
+Sac.quant <- quantile(flow.months$Sac.cfs, probs = c(0.25, 0.5, 0.75))
+Sjr.quant <- quantile(flow.months$SJR.cfs, probs = c(0.25, 0.5, 0.75))
 # Sac.quant <- quantile(flow.dat$Sac.cfs, probs = c(0.2, 0.5, 0.8))
 # Sjr.quant <- quantile(flow.dat$SJR.cfs, probs = c(0.2, 0.5, 0.8))
 
-Flow.subset <- transform(flow.dat, Sub.group = ifelse(Sac.cfs <=  1.2*Sac.quant[[2]] &
-                                                        Sac.cfs >=  0.8*Sac.quant[[2]] &
-                                                        SJR.cfs <= 1.2*Sjr.quant[[1]] &
-                                                        SJR.cfs >= 0.8*Sjr.quant[[1]], "A",
-                                                      ifelse(Sac.cfs <=  1.2*Sac.quant[[2]] &
-                                                               Sac.cfs >=  0.8*Sac.quant[[2]] &
-                                                               SJR.cfs <= 1.2*Sjr.quant[[2]] &
-                                                               SJR.cfs >= 0.8*Sjr.quant[[2]], "B",
-                                                             ifelse(Sac.cfs <=  1.2*Sac.quant[[2]] &
-                                                                      Sac.cfs >=  0.8*Sac.quant[[2]] &
-                                                                      SJR.cfs <= 1.2*Sjr.quant[[3]] &
-                                                                      SJR.cfs >= 0.8*Sjr.quant[[3]], "C",
-                                                                    ifelse(SJR.cfs <=  1.2*Sjr.quant[[2]] &
-                                                                             SJR.cfs >=  0.8*Sjr.quant[[2]] &
-                                                                             Sac.cfs <= 1.2*Sac.quant[[1]] &
-                                                                             Sac.cfs >= 0.8*Sac.quant[[1]], "D",
-                                                                           ifelse(SJR.cfs <=  1.2*Sjr.quant[[2]] &
-                                                                                    SJR.cfs >=  0.8*Sjr.quant[[2]] &
-                                                                                    Sac.cfs <= 1.2*Sac.quant[[3]] &
-                                                                                    Sac.cfs >= 0.8*Sac.quant[[3]], "E", "F"))))))
-
+Flow.subset <- transform(flow.months, Sub.group = ifelse(Sac.cfs <=  1.25*Sac.quant[[2]] &
+                                                        Sac.cfs >=  0.75*Sac.quant[[2]] &
+                                                        SJR.cfs <= 1.25*Sjr.quant[[1]] &
+                                                        SJR.cfs >= 0.75*Sjr.quant[[1]], "A",
+                                                      ifelse(Sac.cfs <=  1.25*Sac.quant[[2]] &
+                                                               Sac.cfs >=  0.75*Sac.quant[[2]] &
+                                                               SJR.cfs <= 1.25*Sjr.quant[[2]] &
+                                                               SJR.cfs >= 0.75*Sjr.quant[[2]], "B",
+                                                             ifelse(Sac.cfs <=  1.25*Sac.quant[[2]] &
+                                                                      Sac.cfs >=  0.75*Sac.quant[[2]] &
+                                                                      SJR.cfs <= 1.25*Sjr.quant[[3]] &
+                                                                      SJR.cfs >= 0.75*Sjr.quant[[3]], "C",
+                                                                    ifelse(SJR.cfs <=  1.25*Sjr.quant[[2]] &
+                                                                             SJR.cfs >=  0.75*Sjr.quant[[2]] &
+                                                                             Sac.cfs <= 1.25*Sac.quant[[1]] &
+                                                                             Sac.cfs >= 0.75*Sac.quant[[1]], "D",
+                                                                           ifelse(SJR.cfs <=  1.25*Sjr.quant[[2]] &
+                                                                                    SJR.cfs >=  0.75*Sjr.quant[[2]] &
+                                                                                    Sac.cfs <= 1.25*Sac.quant[[3]] &
+                                                                                    Sac.cfs >= 0.75*Sac.quant[[3]], "E", "F"))))))
 
 Flow.subset <- subset(Flow.subset, Sub.group != "F")
 nrow(Flow.subset)
+
+
+
+# Subset to multiple groups
+Flow.subset <- flow.months %>%
+  mutate(A = ifelse(Sac.cfs <=  1.25*Sac.quant[[2]] &
+                      Sac.cfs >=  0.75*Sac.quant[[2]] &
+                      SJR.cfs <= 1.25*Sjr.quant[[1]] &
+                      SJR.cfs >= 0.75*Sjr.quant[[1]], "A", ""),
+          B =  ifelse(Sac.cfs <=  1.25*Sac.quant[[2]] &
+                        Sac.cfs >=  0.75*Sac.quant[[2]] &
+                        SJR.cfs <= 1.25*Sjr.quant[[2]] &
+                        SJR.cfs >= 0.75*Sjr.quant[[2]], "B", ""),
+          C = ifelse(Sac.cfs <=  1.25*Sac.quant[[2]] &
+                    Sac.cfs >=  0.75*Sac.quant[[2]] &
+                    SJR.cfs <= 1.25*Sjr.quant[[3]] &
+                    SJR.cfs >= 0.75*Sjr.quant[[3]], "C", ""),
+          D = ifelse(SJR.cfs <=  1.25*Sjr.quant[[2]] &
+                           SJR.cfs >=  0.75*Sjr.quant[[2]] &
+                           Sac.cfs <= 1.25*Sac.quant[[1]] &
+                           Sac.cfs >= 0.75*Sac.quant[[1]], "D", ""),
+           E = ifelse(SJR.cfs <=  1.25*Sjr.quant[[2]] &
+                                  SJR.cfs >=  0.75*Sjr.quant[[2]] &
+                                  Sac.cfs <= 1.25*Sac.quant[[3]] &
+                                  Sac.cfs >= 0.75*Sac.quant[[3]], "E", "")
+         ) %>%
+  mutate(Sub.group = paste0(A, B, C, D, E)) %>%
+  filter(Sub.group != "") %>%
+  select(-A, -B, -C, -D, -E) %>%
+  arrange(OMR)
 
 ### Summarize counts of OMR across groups ###
 
@@ -69,26 +100,29 @@ Flow.sum <- Flow.subset %>%
   as.data.frame(Flow.sum)
 
 Flow.sum
-
+# readr::write_csv(Flow.subset, "flow.subset.table.csv")
+# readr::write_csv(Flow.sum, "flow.summary.table.csv")
 
 ## Added: plot the subsetted data to check -----------------------------------
 library(ggplot2)
 library(viridis)
 
-plot.subsetted <- ggplot(Flow.subset) +
+(plot.subsetted <- ggplot(Flow.subset) +
   geom_point(aes(x = Sac.cfs, y = SJR.cfs, color = Sub.group, shape = factor(OMR)), size = 3) +
   geom_vline(xintercept = Sac.quant[[2]], linetype = "dashed") +
   geom_hline(yintercept = Sjr.quant[[2]], linetype = "dashed") +
   labs(x = "Sacramento Inflow (cfs)", y = "SJR Inflow (cfs)") +
   scale_color_viridis(option = "turbo", discrete = TRUE) +
-  theme_bw()
+  theme_bw())
 
-png(filename = here::here("figures", "plot_subsetteddata_quantiles.png"),
-    width = 7, height = 5, units = "in",
-    pointsize = 12, family = "sans", res = 300)
-plot.subsetted
-dev.off()
+# png(filename = here::here("figures", "plot_subsetteddata_quantiles.png"),
+#     width = 7, height = 5, units = "in",
+#     pointsize = 12, family = "sans", res = 300)
+# plot.subsetted
+# dev.off()
 
+
+# -----------------------------------------------------------------
 
 
 
