@@ -207,7 +207,7 @@ filtered2 <- filtered_try2 %>%
 
 ## Check map (needs work) -----------------------------------
 
-ggplot() +
+map_omr_vals <- ggplot() +
   geom_sf(data = delta_4326, aes(linetype = line), fill = NA, inherit.aes = FALSE)+
   geom_sf(data = filtered2, aes(color = Flow, shape = Flow), alpha = 0.3, inherit.aes = FALSE) +
   facet_wrap(~Month) +
@@ -216,16 +216,24 @@ ggplot() +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 90))
 
-
+png(filename = here::here("figures", "plot_map_omr_vals.png"),
+    width = 6, height = 6, units = "in",
+    pointsize = 12, family = "sans", res = 300)
+map_omr_vals
+dev.off()
 
 ## Visualize differences -------------------
-ggplot(filtered2) +
+barplot_omr <- ggplot(filtered2) +
   geom_col(aes(Month, sumLength, fill = Flow), position = "dodge2")  +
   labs(y = "Sum Channel Length") +
   viridis::scale_fill_viridis(discrete = TRUE) +
   theme_bw()
 
-
+# png(filename = here::here("figures", "plot_barplot_omr_channellength.png"),
+#     width = 6, height = 6, units = "in",
+#     pointsize = 12, family = "sans", res = 300)
+# barplot_omr
+# dev.off()
 
 
 ### Look at February
