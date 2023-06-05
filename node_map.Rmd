@@ -30,7 +30,7 @@ zoi_data <- lapply(zoi_file, read_csv) %>%
   rename(Flow = id)
 nodes <- st_read("shapefiles/nodes.shp") 
 nodes <- st_transform(nodes, crs = st_crs(delta)) %>%
-  select(nodenum, node, channel_nu, channel_id) %>%
+  dplyr::select(nodenum, node, channel_nu, channel_id) %>%
   rename(channel.no = channel_nu)
 nodenames <- read.csv("data_zoi/inputFile_withnode.csv")
   
