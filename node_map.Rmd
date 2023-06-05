@@ -51,7 +51,7 @@ nodes2 <- nodes2 %>%
   mutate(selected = ifelse(node %in% nodesofinterest, "Y", "N"))
 ```
 
-```{r}
+```{r, width = 9, height = 9, units = "in"}
 mapview(nodes2, zcol = "selected")
 ```
 
