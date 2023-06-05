@@ -2,7 +2,7 @@
 title: "node_map"
 author: "Catarina Pien"
 date: '2022-09-13'
-output: html_document
+output: rmarkdown::github_document
 editor_options: 
   chunk_output_type: console
 ---
