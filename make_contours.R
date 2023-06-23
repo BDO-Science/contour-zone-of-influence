@@ -172,6 +172,20 @@ jan_3000_sp <- create_df(month = "Jan", flow = 3000)
 jan_4000_sp <- create_df(month = "Jan", flow = 4000)
 jan_5000_sp <- create_df(month = "Jan", flow = 5000)
 
+### December --------------
+dec_1000_sp <- create_df(month = "Dec", flow = 1000)
+dec_2000_sp <- create_df(month = "Dec", flow = 2000)
+dec_3000_sp <- create_df(month = "Dec", flow = 3000)
+dec_4000_sp <- create_df(month = "Dec", flow = 4000)
+dec_5000_sp <- create_df(month = "Dec", flow = 5000)
+
+### June --------------
+jun_1000_sp <- create_df(month = "Jun", flow = 1000)
+jun_2000_sp <- create_df(month = "Jun", flow = 2000)
+jun_3000_sp <- create_df(month = "Jun", flow = 3000)
+jun_4000_sp <- create_df(month = "Jun", flow = 4000)
+jun_5000_sp <- create_df(month = "Jun", flow = 5000)
+
 ## Create interpolations -------------------
 
 delta_sp <- as(delta_4326, "Spatial")
@@ -201,12 +215,26 @@ r.feb3 <- interp_nodes(feb_3000_sp)
 r.feb4 <- interp_nodes(feb_4000_sp)
 r.feb5 <- interp_nodes(feb_5000_sp)
 
-### February --------------
+### January --------------
 r.jan1 <- interp_nodes(jan_1000_sp)
 r.jan2 <- interp_nodes(jan_2000_sp)
 r.jan3 <- interp_nodes(jan_3000_sp)
 r.jan4 <- interp_nodes(jan_4000_sp)
 r.jan5 <- interp_nodes(jan_5000_sp)
+
+### December --------------
+r.dec1 <- interp_nodes(dec_1000_sp)
+r.dec2 <- interp_nodes(dec_2000_sp)
+r.dec3 <- interp_nodes(dec_3000_sp)
+r.dec4 <- interp_nodes(dec_4000_sp)
+r.dec5 <- interp_nodes(dec_5000_sp)
+
+### June --------------
+r.jun1 <- interp_nodes(jun_1000_sp)
+r.jun2 <- interp_nodes(jun_2000_sp)
+r.jun3 <- interp_nodes(jun_3000_sp)
+r.jun4 <- interp_nodes(jun_4000_sp)
+r.jun5 <- interp_nodes(jun_5000_sp)
 
 ## Create contours --------------------------
 
@@ -358,11 +386,75 @@ contours_jan <- lapply(contours_j, fortify) %>%
          contour = case_when(id %in% c(1,3, 5,7, 9) ~ 0.75,
                              id %in% c(2,4,6,8, 10) ~ 0.95))
 
+### December --------------------------
+c.dec1_95 <- rasterToContour(r.dec1, levels = 0.95)
+plot(c.dec1_95)
+c.dec1_75 <- rasterToContour(r.dec1, levels = 0.75)
+plot(c.dec1_75)
 
+c.dec2_95 <- rasterToContour(r.dec2, levels = 0.95)
+c.dec2_75 <- rasterToContour(r.dec2, levels = 0.75)
+
+c.dec3_95 <- rasterToContour(r.dec3, levels = 0.95)
+c.dec3_75 <- rasterToContour(r.dec3, levels = 0.75)
+
+c.dec4_95 <- rasterToContour(r.dec4, levels = 0.95)
+c.dec4_75 <- rasterToContour(r.dec4, levels = 0.75)
+
+c.dec5_95 <- rasterToContour(r.dec5, levels = 0.95)
+c.dec5_75 <- rasterToContour(r.dec5, levels = 0.75)
+
+contours_d <- c(c.dec1_75, c.dec1_95, c.dec2_75, c.dec2_95,
+                 c.dec3_75, c.dec3_95, c.dec4_75, c.dec4_95,
+                 c.dec5_75, c.dec5_95)
+
+contours_dec <- lapply(contours_d, fortify) %>%
+  bind_rows(.id = "id") %>%
+  mutate(month = "dec") %>%
+  mutate(flow = case_when(id %in% c(1,2) ~ -1000,
+                          id %in% c(3,4) ~ -2000,
+                          id %in% c(5,6) ~ -3000,
+                          id %in% c(7,8) ~ -4000,
+                          id %in% c(9,10) ~ -5000),
+         contour = case_when(id %in% c(1,3, 5,7, 9) ~ 0.75,
+                             id %in% c(2,4,6,8, 10) ~ 0.95))
+
+### June --------------------------
+c.jun1_95 <- rasterToContour(r.jun1, levels = 0.95)
+plot(c.jun1_95)
+c.jun1_75 <- rasterToContour(r.jun1, levels = 0.75)
+plot(c.jun1_75)
+
+c.jun2_95 <- rasterToContour(r.jun2, levels = 0.95)
+c.jun2_75 <- rasterToContour(r.jun2, levels = 0.75)
+
+c.jun3_95 <- rasterToContour(r.jun3, levels = 0.95)
+c.jun3_75 <- rasterToContour(r.jun3, levels = 0.75)
+
+c.jun4_95 <- rasterToContour(r.jun4, levels = 0.95)
+c.jun4_75 <- rasterToContour(r.jun4, levels = 0.75)
+
+c.jun5_95 <- rasterToContour(r.jun5, levels = 0.95)
+c.jun5_75 <- rasterToContour(r.jun5, levels = 0.75)
+
+contours_ju <- c(c.jun1_75, c.jun1_95, c.jun2_75, c.jun2_95,
+                 c.jun3_75, c.jun3_95, c.jun4_75, c.jun4_95,
+                 c.jun5_75, c.jun5_95)
+
+contours_jun <- lapply(contours_ju, fortify) %>%
+  bind_rows(.id = "id") %>%
+  mutate(month = "jun") %>%
+  mutate(flow = case_when(id %in% c(1,2) ~ -1000,
+                          id %in% c(3,4) ~ -2000,
+                          id %in% c(5,6) ~ -3000,
+                          id %in% c(7,8) ~ -4000,
+                          id %in% c(9,10) ~ -5000),
+         contour = case_when(id %in% c(1,3, 5,7, 9) ~ 0.75,
+                             id %in% c(2,4,6,8, 10) ~ 0.95))
 
 ### Combine all
 # switching factor levels will allow color palette to work right
-contours_all <- rbind(contours_april, contours_may, contours_mar, contours_feb, contours_jan) %>%
+contours_all <- rbind(contours_april, contours_may, contours_mar, contours_feb, contours_jan, contours_dec, contours_jun) %>%
   mutate(flow = factor(flow, levels = c("-1000", "-2000", "-3000", "-4000", "-5000")))
 
 # Make map -----------------------
@@ -378,6 +470,8 @@ make_map(mon = "apr", clevel = 0.75)
 make_map(mon = "mar", clevel = 0.75)
 make_map(mon = "feb", clevel = 0.75)
 make_map(mon = "jan", clevel = 0.75)
+make_map(mon = "dec", clevel = 0.75)
+make_map(mon = "jun", clevel = 0.75)
 
 make_map(mon = "may", clevel =  0.95)
 make_map(mon = "apr", clevel =  0.95)
