@@ -1,0 +1,110 @@
+---
+title: "explore_dsm2_data"
+author: "Catarina Pien"
+date: '2023-07-14'
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(readr)
+library(dplyr)
+library(overlapping)
+```
+
+
+
+```{r}
+file1 <- read_csv("data_raw/channel_ids_490_through_499.csv") %>%
+  rename(OMR = `OMR (cfs)`,
+         SAC = `SAC Freeport (cfs)`,
+         SJR = `SJR Vernalis (cfs)`)
+
+file1 <- read_csv("data_raw/channel_ids_100_through_109.csv") %>%
+  rename(OMR = `OMR (cfs)`,
+         SAC = `SAC Freeport (cfs)`,
+         SJR = `SJR Vernalis (cfs)`)
+
+glimpse(file1)
+
+# dsm2_files <- list.files("data_raw/", pattern = "*.csv", full.names = TRUE)
+# dsm2_comb <- lapply(dsm2_files, read_csv) %>%
+#   bind_rows()
+```
+
+```{r}
+ggplot() +
+  geom_sf(data = delta_4326, aes(geometry = geometry, color = "Black"), 
+          fill = NA, linetype = "dashed", show.legend = "line") +
+  geom_sf(data = WW_Delta_crop, aes(geometry = geometry, fill = "TYPE"), 
+          fill = "lightskyblue2", color = "lightskyblue2", alpha = 0.7, show.legend = "polygon", inherit.aes = FALSE) +
+  # geom_sf(data = nodes_4326, aes(geometry = geometry), size = 0.4, color = "gray30", show.legend = "point", inherit.aes = FALSE) +
+  geom_sf_text(data = nodes_4326, aes(label = node), size = 2, color = "gray30",  inherit.aes = FALSE) +
+  #geom_path(data = contourMonth, aes(x = long, y = lat, group  = grouper, color= flow), size = 0.6, inherit.aes = FALSE) +
+  annotation_north_arrow(location = "tr", which_north = "true",
+                         pad_x = unit(.1, "in"), pad_y = unit(0.2, "in"),
+                         style = north_arrow_fancy_orienteering) +
+  annotation_scale(location = "bl", bar_cols = c("black", "white", "black", "white")) +
+  #scale_color_manual("Legend", values = cpal[c(1,2,3,4,5)]) +
+  scale_color_manual("Legend", values = c("black", "lightskyblue2", "gray30"), labels = c("Delta Boundary", "Waterways", "DSM2 Nodes"))
+
+scale_linetype_manual("Legend", values = c("dashed", NA, NA)) +
+  labs(title = paste(mon, "contour", clevel)) +
+  theme_classic()
+```
+
+
+```{r}
+ggplot(file1) + geom_histogram(aes(OMR))
+file1d <- file1 %>%
+  group_by(Date, channel_id, channel_number, node) %>%
+  mutate(Velocity_Pumping = mean(Velocity_Pumping),
+         Velocity_No_Pumping = mean(Velocity_No_Pumping),
+         OMR = mean(OMR),
+         SAC = mean(SAC),
+         SJR = mean(SJR))
+
+
+file1_5000 <- filter(file1, OMR >= -5500 & OMR <= -4500)
+file1_3500 <- filter(file1, OMR >= -4000 & OMR <= -3000)
+file1_2000 <- filter(file1, OMR >= -2500 & OMR <= -1500)
+
+file1_376 <- filter(file1_5000, node == 376)
+
+file1_102 <- filter(file1_5000, node == 102)
+
+```
+
+```{r}
+ggplot(file1_102) + 
+  geom_density(aes(Velocity_No_Pumping)) +
+  geom_density(aes(Velocity_Pumping), color = "red")
+
+
+lower <- min(c(file1_102$Velocity_Pumping, file1_102$Velocity_No_Pumping)) - 1 
+upper <- max(c(file1_102$Velocity_Pumping, file1_102$Velocity_No_Pumping)) + 1
+d.102p <- density(file1_102$Velocity_Pumping, from=lower, to=upper)
+d.102np <- density(file1_102$Velocity_No_Pumping, from=lower, to=upper)
+
+plot(d.102p)
+plot(d.102np)
+
+nodes102 <- list(d.102p$y, d.102np$y)
+
+out <- overlap(nodes102, nbins = 1000, plot = TRUE)
+```
+
+# Compare hourly with daily data 
+
+```{r}
+set.seed(2000)
+x <- list(X1=rnorm(100),X2=rt(50,8),X3=rchisq(80,2))
+out <- overlap(x,plot=TRUE)
+
+
+
+```
+
