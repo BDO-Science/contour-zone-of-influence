@@ -10,15 +10,78 @@ editor_options:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
+
+```
+
+```{r}
 library(readr)
 library(dplyr)
 library(overlapping)
+library(deltamapr)
+library(sf)
+library(mapview)
 ```
 
-
+# Read in files
 
 ```{r}
-file1 <- read_csv("data_raw/channel_ids_490_through_499.csv") %>%
+# Mapping data ---------------------------------------------------------
+# delta <- st_read("shapefiles/Bay_Delta_Poly_New.shp")
+nodes <- st_read("shapefiles/nodes.shp") %>%
+  dplyr::select(node)
+nodes_4326 <- st_transform(nodes, crs = 4326) %>%
+  mutate(points = "DSM2 nodes")
+channels0 <- read_csv("data_updatedDSM2/Reclamation_2021LTO_DSM2_Version806_ChannelLengths.csv") %>%
+  janitor::clean_names()  %>%
+  rename(channel_number = chan_no)
+WW_Delta_4326 <- st_transform(WW_Delta, crs = 4326)
+WW_Delta_crop <- st_crop(WW_Delta_4326,xmin = -122.2, xmax = -121, ymin = 37.5, ymax = 38.8) %>%
+  filter(HNAME!= "SAN FRANCISCO BAY")
+
+
+```
+
+## Pick nodes of interest
+```{r}
+ggplot() +
+  geom_sf(data = WW_Delta_crop, aes(geometry = geometry, fill = "TYPE"), 
+           fill = "lightskyblue2", color = "lightskyblue2", alpha = 0.7, show.legend = "polygon", inherit.aes = FALSE) +
+ geom_sf_text(data = nodes_4326, aes(label = node), size = 2, color = "gray30",  inherit.aes = FALSE) +
+  theme_bw()
+
+mapview(nodes_4326, zcol = "node")
+```
+
+## Raw data
+
+data for mike
+```{r}
+mb1 <- read_csv("data_raw/channel_ids_50_through_59.csv")
+mb2 <- read_csv("data_raw/channel_ids_40_through_49.csv")
+
+mb <- rbind(mb1, mb2) %>%
+  filter(node %in% c(37, 39, 8, 52))
+saveRDS(mb, "data_raw/channels_for_mike.rds", compress = "xz")
+```
+
+other files of interest
+```{r}
+file1 <- read_csv("data_raw/channel_ids_430_through_449.csv") %>%
+  rename(OMR = `OMR (cfs)`,
+         SAC = `SAC Freeport (cfs)`,
+         SJR = `SJR Vernalis (cfs)`)
+
+file1 <- read_csv("data_raw/channel_ids_170_through_179.csv") %>%
+  rename(OMR = `OMR (cfs)`,
+         SAC = `SAC Freeport (cfs)`,
+         SJR = `SJR Vernalis (cfs)`)
+
+file1 <- read_csv("data_raw/channel_ids_160_through_169.csv") %>%
+  rename(OMR = `OMR (cfs)`,
+         SAC = `SAC Freeport (cfs)`,
+         SJR = `SJR Vernalis (cfs)`)
+
+file1 <- read_csv("data_raw/channel_ids_120_through_129.csv") %>%
   rename(OMR = `OMR (cfs)`,
          SAC = `SAC Freeport (cfs)`,
          SJR = `SJR Vernalis (cfs)`)
@@ -35,76 +98,84 @@ glimpse(file1)
 #   bind_rows()
 ```
 
-```{r}
-ggplot() +
-  geom_sf(data = delta_4326, aes(geometry = geometry, color = "Black"), 
-          fill = NA, linetype = "dashed", show.legend = "line") +
-  geom_sf(data = WW_Delta_crop, aes(geometry = geometry, fill = "TYPE"), 
-          fill = "lightskyblue2", color = "lightskyblue2", alpha = 0.7, show.legend = "polygon", inherit.aes = FALSE) +
-  # geom_sf(data = nodes_4326, aes(geometry = geometry), size = 0.4, color = "gray30", show.legend = "point", inherit.aes = FALSE) +
-  geom_sf_text(data = nodes_4326, aes(label = node), size = 2, color = "gray30",  inherit.aes = FALSE) +
-  #geom_path(data = contourMonth, aes(x = long, y = lat, group  = grouper, color= flow), size = 0.6, inherit.aes = FALSE) +
-  annotation_north_arrow(location = "tr", which_north = "true",
-                         pad_x = unit(.1, "in"), pad_y = unit(0.2, "in"),
-                         style = north_arrow_fancy_orienteering) +
-  annotation_scale(location = "bl", bar_cols = c("black", "white", "black", "white")) +
-  #scale_color_manual("Legend", values = cpal[c(1,2,3,4,5)]) +
-  scale_color_manual("Legend", values = c("black", "lightskyblue2", "gray30"), labels = c("Delta Boundary", "Waterways", "DSM2 Nodes"))
 
-scale_linetype_manual("Legend", values = c("dashed", NA, NA)) +
-  labs(title = paste(mon, "contour", clevel)) +
-  theme_classic()
+## Filter data to respective OMRs
+```{r}
+nodeNum == 118 # so that I just need to change it once
+
+# divvy up into respective files
+file1_5000 <- filter(file1, OMR >= -5500 & OMR <= -4500)
+file1_3500 <- filter(file1, OMR >= -4000 & OMR <= -3000)
+file1_2000 <- dplyr::filter(file1, OMR >= -2500 & OMR <= -1500)
+
+node <- filter(file1_5000, node == 118)
 ```
 
 
+# Look at density curves
 ```{r}
-ggplot(file1) + geom_histogram(aes(OMR))
+ggplot(node) + 
+  geom_density(aes(Velocity_No_Pumping), color = "navy", fill = "navy", alpha = 0.5) +
+  geom_density(aes(Velocity_Pumping), color = "red", fill = "red", alpha = 0.5)
+
+lower <- min(c(node$Velocity_Pumping, node$Velocity_No_Pumping)) - 1 
+upper <- max(c(node$Velocity_Pumping, node$Velocity_No_Pumping)) + 1
+d.p <- density(node$Velocity_Pumping, from=lower, to=upper)
+d.np <- density(node$Velocity_No_Pumping, from=lower, to=upper)
+
+plot(d.p)
+plot(d.np)
+
+nodes_list <- list(node$Velocity_Pumping, node$Velocity_No_Pumping)
+
+out <- overlap(nodes_list, nbins = 100, plot = TRUE, type = "2")
+```
+
+```{r}
+source("functions.R")
+nodes <- list(unique(file1$node))
+nodes
+
+result <- calc_overlap(file1, 118)
+
+df <-  purrr::map2(.x=file1, .y = list(118,119), calc_overlap) %>%
+  bind_rows()
+```
+
+
+# Create metric of median velocity difference
+```{r}
+node_v <- node %>%
+  filter(node == 119) %>%
+  mutate(vdiff= Velocity_No_Pumping-Velocity_Pumping)
+
+hist(node_v$vdiff)
+
+
+ggplot(node_v) + geom_histogram(aes(vdiff))
+
+# Mean no pumping velocity. Threshold could be 0.25 - 0.75 of mean or maximum 
+
+# histogram of vdiff
+# calculation proportion of vdiff > threshold velocity (e.g. 0.5)
+```
+
+
+
+
+
+
+# Compare hourly vs daily data 
+## Create daily data 
+
+```{r}
 file1d <- file1 %>%
+  filter(node == nodeNum) %>%
   group_by(Date, channel_id, channel_number, node) %>%
   mutate(Velocity_Pumping = mean(Velocity_Pumping),
          Velocity_No_Pumping = mean(Velocity_No_Pumping),
          OMR = mean(OMR),
          SAC = mean(SAC),
          SJR = mean(SJR))
-
-
-file1_5000 <- filter(file1, OMR >= -5500 & OMR <= -4500)
-file1_3500 <- filter(file1, OMR >= -4000 & OMR <= -3000)
-file1_2000 <- filter(file1, OMR >= -2500 & OMR <= -1500)
-
-file1_376 <- filter(file1_5000, node == 376)
-
-file1_102 <- filter(file1_5000, node == 102)
-
-```
-
-```{r}
-ggplot(file1_102) + 
-  geom_density(aes(Velocity_No_Pumping)) +
-  geom_density(aes(Velocity_Pumping), color = "red")
-
-
-lower <- min(c(file1_102$Velocity_Pumping, file1_102$Velocity_No_Pumping)) - 1 
-upper <- max(c(file1_102$Velocity_Pumping, file1_102$Velocity_No_Pumping)) + 1
-d.102p <- density(file1_102$Velocity_Pumping, from=lower, to=upper)
-d.102np <- density(file1_102$Velocity_No_Pumping, from=lower, to=upper)
-
-plot(d.102p)
-plot(d.102np)
-
-nodes102 <- list(d.102p$y, d.102np$y)
-
-out <- overlap(nodes102, nbins = 1000, plot = TRUE)
-```
-
-# Compare hourly with daily data 
-
-```{r}
-set.seed(2000)
-x <- list(X1=rnorm(100),X2=rt(50,8),X3=rchisq(80,2))
-out <- overlap(x,plot=TRUE)
-
-
-
 ```
 
