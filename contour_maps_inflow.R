@@ -108,7 +108,7 @@ interp_nodes <- function(df, mask=delta_sp) {
   # Interpolate the grid cells using a power value of 2 (idp=2.0)
   group.idw <- gstat::idw(DSM2 ~ 1, df, newdata=grd, idp=2.0)
 
-  # Convert to raster object then clip to Texas
+  # Convert to raster object then clip to Delta
   raster       <- raster(group.idw)
   raster_mask     <- mask(raster, mask)
 
@@ -381,7 +381,6 @@ contourGroup <- contours_all %>%
 (map_75 <- ggplot() +
     # geom_sf(data = delta_4326, fill = NA, inherit.aes = FALSE, linetype = "dashed") +
     geom_sf(data = WW_Delta_crop, fill = "gray90", color = "gray70", alpha = 0.7, inherit.aes = FALSE) +
-    # geom_sf(data = nodes_4326, size = 0.4, color = "gray30", inherit.aes = FALSE) +
     geom_path(data = contourGroup, aes(x = long, y = lat, group  = grouper, color= label, linetype = OMR_flow), linewidth = 0.5, inherit.aes = FALSE) +
     annotation_north_arrow(location = "tr", which_north = "true",
                            pad_x = unit(.1, "in"), pad_y = unit(0.2, "in"),
@@ -409,6 +408,73 @@ contourGroup <- contours_all %>%
     theme_classic() +
     theme(axis.text = element_blank()))
 
+(map_75_fA <- ggplot() +
+    geom_sf(data = WW_Delta_crop, fill = "gray90", color = "gray70", alpha = 0.7, inherit.aes = FALSE) +
+    geom_path(data = contourGroup %>% filter(group2=="A"), aes(x = long, y = lat, group  = grouper, color= label, linetype = OMR_flow), linewidth = 0.5, inherit.aes = FALSE) +
+    annotation_north_arrow(location = "tr", which_north = "true",
+                           pad_x = unit(.1, "in"), pad_y = unit(0.2, "in"),
+                           style = north_arrow_fancy_orienteering) +
+    annotation_scale(location = "bl", bar_cols = c("black", "white", "black", "white")) +
+    ylim(c(37.6, 38.3)) +
+    xlim(c(-122.2, -121.2)) +
+    scale_color_manual("OMR Flow (cfs)", values = viridis::viridis(15)[1:3]) +
+    labs(title = paste0("0.75 Contour\n", contourGroup$Inflow))+
+    theme_classic())
+
+(map_75_fB <- ggplot() +
+    geom_sf(data = WW_Delta_crop, fill = "gray90", color = "gray70", alpha = 0.7, inherit.aes = FALSE) +
+    geom_path(data = contourGroup %>% filter(group2=="B"), aes(x = long, y = lat, group  = grouper, color= label, linetype = OMR_flow), linewidth = 0.5, inherit.aes = FALSE) +
+    annotation_north_arrow(location = "tr", which_north = "true",
+                           pad_x = unit(.1, "in"), pad_y = unit(0.2, "in"),
+                           style = north_arrow_fancy_orienteering) +
+    annotation_scale(location = "bl", bar_cols = c("black", "white", "black", "white")) +
+    ylim(c(37.6, 38.3)) +
+    xlim(c(-122.2, -121.2)) +
+    scale_color_manual("OMR Flow (cfs)", values = viridis::viridis(15)[4:6]) +
+    labs(title = paste0("0.75 Contour\n", contourGroup$Inflow))+
+    theme_classic())
+
+(map_75_fC <- ggplot() +
+    geom_sf(data = WW_Delta_crop, fill = "gray90", color = "gray70", alpha = 0.7, inherit.aes = FALSE) +
+    geom_path(data = contourGroup %>% filter(group2=="C"), aes(x = long, y = lat, group  = grouper, color= label, linetype = OMR_flow), linewidth = 0.5, inherit.aes = FALSE) +
+    annotation_north_arrow(location = "tr", which_north = "true",
+                           pad_x = unit(.1, "in"), pad_y = unit(0.2, "in"),
+                           style = north_arrow_fancy_orienteering) +
+    annotation_scale(location = "bl", bar_cols = c("black", "white", "black", "white")) +
+    ylim(c(37.6, 38.3)) +
+    xlim(c(-122.2, -121.2)) +
+    scale_color_manual("OMR Flow (cfs)", values = viridis::viridis(15)[7:9]) +
+    labs(title = paste0("0.75 Contour\n", contourGroup$Inflow))+
+    theme_classic())
+
+(map_75_fD <- ggplot() +
+    geom_sf(data = WW_Delta_crop, fill = "gray90", color = "gray70", alpha = 0.7, inherit.aes = FALSE) +
+    geom_path(data = contourGroup %>% filter(group2=="D"), aes(x = long, y = lat, group  = grouper, color= label, linetype = OMR_flow), linewidth = 0.5, inherit.aes = FALSE) +
+    annotation_north_arrow(location = "tr", which_north = "true",
+                           pad_x = unit(.1, "in"), pad_y = unit(0.2, "in"),
+                           style = north_arrow_fancy_orienteering) +
+    annotation_scale(location = "bl", bar_cols = c("black", "white", "black", "white")) +
+    ylim(c(37.6, 38.3)) +
+    xlim(c(-122.2, -121.2)) +
+    scale_color_manual("OMR Flow (cfs)", values = viridis::viridis(15)[10:12]) +
+    labs(title = paste0("0.75 Contour\n", contourGroup$Inflow))+
+    theme_classic())
+
+(map_75_fE <- ggplot() +
+    geom_sf(data = WW_Delta_crop, fill = "gray90", color = "gray70", alpha = 0.7, inherit.aes = FALSE) +
+    geom_path(data = contourGroup %>% filter(group2=="E"), aes(x = long, y = lat, group  = grouper, color= label, linetype = OMR_flow), linewidth = 0.5, inherit.aes = FALSE) +
+    annotation_north_arrow(location = "tr", which_north = "true",
+                           pad_x = unit(.1, "in"), pad_y = unit(0.2, "in"),
+                           style = north_arrow_fancy_orienteering) +
+    annotation_scale(location = "bl", bar_cols = c("black", "white", "black", "white")) +
+    ylim(c(37.6, 38.3)) +
+    xlim(c(-122.2, -121.2)) +
+    scale_color_manual("OMR Flow (cfs)", values = viridis::viridis(15)[13:15]) +
+    labs(title = paste0("0.75 Contour\n", contourGroup$Inflow))+
+    theme_classic())
+
+
+
 
 
 contourGroup2 <- contours_all %>%
@@ -424,7 +490,6 @@ contourGroup2 <- contours_all %>%
 (map_25 <- ggplot() +
     # geom_sf(data = delta_4326, fill = NA, inherit.aes = FALSE, linetype = "dashed") +
     geom_sf(data = WW_Delta_crop, fill = "gray90", color = "gray70", alpha = 0.7, inherit.aes = FALSE) +
-    # geom_sf(data = nodes_4326, size = 0.4, color = "gray30", inherit.aes = FALSE) +
     geom_path(data = contourGroup2, aes(x = long, y = lat, group  = grouper, color= label, linetype = OMR_flow), linewidth = 0.5, inherit.aes = FALSE) +
     annotation_north_arrow(location = "tr", which_north = "true",
                            pad_x = unit(.1, "in"), pad_y = unit(0.2, "in"),
@@ -436,14 +501,8 @@ contourGroup2 <- contours_all %>%
 
 
 (map_25_f <- ggplot() +
-    # geom_sf(data = delta_4326, fill = NA, inherit.aes = FALSE, linetype = "dashed") +
     geom_sf(data = WW_Delta_crop, fill = "gray90", color = "gray70", alpha = 0.7, inherit.aes = FALSE) +
-    # geom_sf(data = nodes_4326, size = 0.4, color = "gray30", inherit.aes = FALSE) +
     geom_path(data = contourGroup2, aes(x = long, y = lat, group  = grouper, color= label, linetype = OMR_flow), linewidth = 0.5, inherit.aes = FALSE) +
-    # annotation_north_arrow(location = "tr", which_north = "true",
-    #                        pad_x = unit(.1, "in"), pad_y = unit(0.2, "in"),
-    #                        style = north_arrow_fancy_orienteering) +
-    # annotation_scale(location = "bl", bar_cols = c("black", "white", "black", "white")) +
     facet_wrap(~Inflow) +
     ylim(c(37.7, 38.1)) +
     xlim(c(-121.8, -121.2)) +
@@ -451,6 +510,72 @@ contourGroup2 <- contours_all %>%
     labs(title = "0.25 Contours")+
     theme_classic()+
     theme(axis.text = element_blank()))
+
+(map_25_fA <- ggplot() +
+    geom_sf(data = WW_Delta_crop, fill = "gray90", color = "gray70", alpha = 0.7, inherit.aes = FALSE) +
+    geom_path(data = contourGroup2 %>% filter(group2=="A"), aes(x = long, y = lat, group  = grouper, color= label, linetype = OMR_flow), linewidth = 0.5, inherit.aes = FALSE) +
+    annotation_north_arrow(location = "tr", which_north = "true",
+                           pad_x = unit(.1, "in"), pad_y = unit(0.2, "in"),
+                           style = north_arrow_fancy_orienteering) +
+    annotation_scale(location = "bl", bar_cols = c("black", "white", "black", "white")) +
+    ylim(c(37.7, 38.1)) +
+    xlim(c(-121.8, -121.2)) +
+    scale_color_manual("OMR Flow (cfs)", values = viridis::viridis(15)[1:3]) +
+    labs(title = paste0("0.25 Contour\n", contourGroup2$Inflow))+
+    theme_classic())
+
+(map_25_fB <- ggplot() +
+    geom_sf(data = WW_Delta_crop, fill = "gray90", color = "gray70", alpha = 0.7, inherit.aes = FALSE) +
+    geom_path(data = contourGroup2 %>% filter(group2=="B"), aes(x = long, y = lat, group  = grouper, color= label, linetype = OMR_flow), linewidth = 0.5, inherit.aes = FALSE) +
+    annotation_north_arrow(location = "tr", which_north = "true",
+                           pad_x = unit(.1, "in"), pad_y = unit(0.2, "in"),
+                           style = north_arrow_fancy_orienteering) +
+    annotation_scale(location = "bl", bar_cols = c("black", "white", "black", "white")) +
+    ylim(c(37.7, 38.1)) +
+    xlim(c(-121.8, -121.2)) +
+    scale_color_manual("OMR Flow (cfs)", values = viridis::viridis(15)[4:6]) +
+    labs(title = paste0("0.25 Contour\n", contourGroup2$Inflow))+
+    theme_classic())
+
+(map_25_fC <- ggplot() +
+    geom_sf(data = WW_Delta_crop, fill = "gray90", color = "gray70", alpha = 0.7, inherit.aes = FALSE) +
+    geom_path(data = contourGroup2 %>% filter(group2=="C"), aes(x = long, y = lat, group  = grouper, color= label, linetype = OMR_flow), linewidth = 0.5, inherit.aes = FALSE) +
+    annotation_north_arrow(location = "tr", which_north = "true",
+                           pad_x = unit(.1, "in"), pad_y = unit(0.2, "in"),
+                           style = north_arrow_fancy_orienteering) +
+    annotation_scale(location = "bl", bar_cols = c("black", "white", "black", "white")) +
+    ylim(c(37.7, 38.1)) +
+    xlim(c(-121.8, -121.2)) +
+    scale_color_manual("OMR Flow (cfs)", values = viridis::viridis(15)[7:9]) +
+    labs(title = paste0("0.25 Contour\n", contourGroup2$Inflow))+
+    theme_classic())
+
+(map_25_fD <- ggplot() +
+    geom_sf(data = WW_Delta_crop, fill = "gray90", color = "gray70", alpha = 0.7, inherit.aes = FALSE) +
+    geom_path(data = contourGroup2 %>% filter(group2=="D"), aes(x = long, y = lat, group  = grouper, color= label, linetype = OMR_flow), linewidth = 0.5, inherit.aes = FALSE) +
+    annotation_north_arrow(location = "tr", which_north = "true",
+                           pad_x = unit(.1, "in"), pad_y = unit(0.2, "in"),
+                           style = north_arrow_fancy_orienteering) +
+    annotation_scale(location = "bl", bar_cols = c("black", "white", "black", "white")) +
+    ylim(c(37.7, 38.1)) +
+    xlim(c(-121.8, -121.2)) +
+    scale_color_manual("OMR Flow (cfs)", values = viridis::viridis(15)[10:12]) +
+    labs(title = paste0("0.25 Contour\n", contourGroup2$Inflow))+
+    theme_classic())
+
+(map_25_fE <- ggplot() +
+    geom_sf(data = WW_Delta_crop, fill = "gray90", color = "gray70", alpha = 0.7, inherit.aes = FALSE) +
+    geom_path(data = contourGroup2 %>% filter(group2=="E"), aes(x = long, y = lat, group  = grouper, color= label, linetype = OMR_flow), linewidth = 0.5, inherit.aes = FALSE) +
+    annotation_north_arrow(location = "tr", which_north = "true",
+                           pad_x = unit(.1, "in"), pad_y = unit(0.2, "in"),
+                           style = north_arrow_fancy_orienteering) +
+    annotation_scale(location = "bl", bar_cols = c("black", "white", "black", "white")) +
+    ylim(c(37.7, 38.1)) +
+    xlim(c(-121.8, -121.2)) +
+    scale_color_manual("OMR Flow (cfs)", values = viridis::viridis(15)[13:15]) +
+    labs(title = paste0("0.25 Contour\n", contourGroup2$Inflow))+
+    theme_classic())
+
 
 
 # Export Maps ---------------------
@@ -461,11 +586,42 @@ ggsave("figures/Contours_75_allgroups.png", width = 7, height = 6, device = 'png
 map_75_f
 ggsave("figures/Contours_75_allgroups_facet.png", width = 9, height = 6, device = 'png', dpi = 300)
 
+map_75_fA
+ggsave("figures/Contours_75_allgroups_facetA.png", width = 9, height = 6, device = 'png', dpi = 300)
+
+map_75_fB
+ggsave("figures/Contours_75_allgroups_facetB.png", width = 9, height = 6, device = 'png', dpi = 300)
+
+map_75_fC
+ggsave("figures/Contours_75_allgroups_facetC.png", width = 9, height = 6, device = 'png', dpi = 300)
+
+map_75_fD
+ggsave("figures/Contours_75_allgroups_facetD.png", width = 9, height = 6, device = 'png', dpi = 300)
+
+map_75_fE
+ggsave("figures/Contours_75_allgroups_facetE.png", width = 9, height = 6, device = 'png', dpi = 300)
+
+
 map_25
 ggsave("figures/Contours_25_allgroups.png", width = 7, height = 6, device = 'png', dpi = 300)
 
 map_25_f
 ggsave("figures/Contours_25_allgroups_facet.png", width = 9, height = 6, device = 'png', dpi = 300)
+
+map_25_fA
+ggsave("figures/Contours_25_allgroups_facetA.png", width = 9, height = 6, device = 'png', dpi = 300)
+
+map_25_fB
+ggsave("figures/Contours_25_allgroups_facetB.png", width = 9, height = 6, device = 'png', dpi = 300)
+
+map_25_fC
+ggsave("figures/Contours_25_allgroups_facetC.png", width = 9, height = 6, device = 'png', dpi = 300)
+
+map_25_fD
+ggsave("figures/Contours_25_allgroups_facetD.png", width = 9, height = 6, device = 'png', dpi = 300)
+
+map_25_fE
+ggsave("figures/Contours_25_allgroups_facetE.png", width = 9, height = 6, device = 'png', dpi = 300)
 
 
 
