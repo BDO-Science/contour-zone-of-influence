@@ -17,6 +17,7 @@ library(sf)
 library(stars)
 library(readr)
 library(janitor)
+library(ggpattern)
 
 
 # Read/Join data ---------------------------------------------------------
@@ -57,7 +58,10 @@ filtered_dat_high <- zoi_channel_group %>%
   filter(p_overlap < 0.25)
 
 filtered_dat_med <- zoi_channel_group %>%
-  filter(p_overlap > 0.25 & p_overlap < 0.75)
+  filter(p_overlap >= 0.25 & p_overlap <= 0.75)
+
+filtered_dat_low <- zoi_channel_group %>%
+  filter(p_overlap > 0.75)
 
 
 # Calculate total length -------------------------
@@ -77,7 +81,16 @@ filtered2_med <- filtered_dat_med %>%
   mutate(pLength = sumLength/total_channel_length) %>%
   mutate(h_influence = "Medium hydrologic influence")
 
-filtered_dat <- rbind(filtered2_high, filtered2_med)
+filtered2_low <- filtered_dat_low %>%
+  group_by(Group, OMR_Flow) %>%
+  summarize(sumLength = sum(length_feet))%>%
+  ungroup() %>%
+  mutate(Group = factor(Group, levels = c("A", "B", "C", "D", "E"))) %>%
+  mutate(pLength = sumLength/total_channel_length) %>%
+  mutate(h_influence = "Low hydrologic influence")
+
+filtered_dat <- rbind(filtered2_high, filtered2_med, filtered2_low) %>%
+  mutate(h_influence = factor(h_influence, levels = c("Low hydrologic influence", "Medium hydrologic influence", "High hydrologic influence")))
 
 
 ## Visualize differences -------------------
@@ -89,8 +102,36 @@ barplot_omr <- ggplot(filtered_dat) +
   theme_bw()
 barplot_omr
 
+(stacked_barplot <- ggplot(filtered_dat) +
+  geom_col(aes(OMR_Flow, pLength, fill = OMR_Flow, color = h_influence, group = OMR_Flow))  +
+  labs(y = "Proportional Channel Length") +
+    facet_wrap(~Group) +
+  viridis::scale_fill_viridis(discrete = TRUE) +
+  theme_bw())
+
+(stacked_barplot <- ggplot(filtered_dat, aes(x = OMR_Flow, y = pLength, fill = OMR_Flow, pattern = h_influence)) +
+    geom_col_pattern(color = "gray50",
+                     pattern_color = "gray80",
+                     pattern_fill = "gray80",
+                     pattern_spacing = 0.06,
+                     pattern_size = 0.4,
+                     alpha = 0.8)  +
+    labs(y = "Proportional Channel Length") +
+    scale_pattern_manual(values = c("circle", "none", "stripe")) +
+    facet_wrap(~Group) +
+    viridis::scale_fill_viridis(discrete = TRUE) +
+    # guides(pattern_fill = "none",
+    #        pattern = "none") +
+    theme_bw() +
+    theme(legend.position = "top",
+          legend.box = "vertical"))
+
 png("figures/proportional_channel_length_dropnodes.png", width = 7, height = 9, units = "in", res = 300, pointsize = 9)
 barplot_omr
+dev.off()
+
+png("figures/stacked_barplot_channellengths.png", width = 7, height = 8, units = "in", res = 300, pointsize = 9)
+stacked_barplot
 dev.off()
 
 ## Look at map --------------------------
