@@ -292,19 +292,11 @@ dev.off()
 
 # Create metric of median velocity difference
 ```{r}
-node_v <- node %>%
-  filter(node == 119) %>%
-  mutate(vdiff= Velocity_No_Pumping-Velocity_Pumping)
+source("functions.R")
 
-hist(node_v$vdiff)
-
-
-ggplot(node_v) + geom_histogram(aes(vdiff))
-
-# Mean no pumping velocity. Threshold could be 0.25 - 0.75 of mean or maximum 
-
-# histogram of vdiff
-# calculation proportion of vdiff > threshold velocity (e.g. 0.5)
+diff_vel(file, nodeNum = 351, chanNum = 431)
+diff_vel(file, nodeNum = 93, chanNum = 108)
+diff_vel(file, nodeNum = 38, chanNum = 43)
+diff_vel(file, nodeNum = 31, chanNum = 35)
+diff_vel(file, nodeNum = 26, chanNum = 30)
 ```
-
-

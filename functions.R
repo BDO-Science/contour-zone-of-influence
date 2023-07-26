@@ -161,3 +161,81 @@ calc_overlap_daily <- function(df, nodeNum, chanNum) {
   return(overlap_df)
 
 }
+
+
+
+
+diff_vel <- function(df, nodeNum, chanNum) {
+
+  # Filter by monthly OMR, node and channel number, calculate Vdiff-----------------
+  hourly <- df %>%
+    filter(node == nodeNum & channel_number == chanNum) %>%
+    mutate(OMR2 = case_when(monthlyOMR >= -5500 & monthlyOMR <= -4500 ~ -5000,
+                            monthlyOMR >= -3500 & monthlyOMR <= -2500 ~ -3000,
+                            monthlyOMR >= -2500 & monthlyOMR <= -1500 ~ -2000)) %>%
+    dplyr::filter(OMR2 %in% c(-5000, -3000, -2000)) %>%
+    mutate(OMR2 = factor(OMR2, levels = c("-2000", "-3000", "-5000"))) %>%
+    mutate(vdiff = Velocity_Pumping-Velocity_No_Pumping,
+           timestep = "hourly")
+
+  # Dailify data -----------------------------------------
+  daily <- hourly %>% group_by(date, channel_id, channel_number, node, monthlyOMR, OMR2) %>%
+    summarize(Velocity_Pumping = mean(Velocity_Pumping, na.rm = TRUE),
+              Velocity_No_Pumping = mean(Velocity_No_Pumping, na.rm = TRUE),
+              OMR = mean(OMR, na.rm = TRUE),
+              SAC = mean(SAC, na.rm = TRUE),
+              SJR = mean(SJR, na.rm = TRUE)) %>%
+    ungroup()%>%
+    mutate(vdiff = Velocity_Pumping-Velocity_No_Pumping,
+           timestep = "daily")
+
+  # Combine data --------------------------------------------
+  vel_data <- bind_rows(hourly, daily)
+  vel_data_long <- vel_data %>%
+    dplyr::select(Velocity_Pumping, Velocity_No_Pumping, OMR2, timestep) %>%
+    rename(Vel_NP = Velocity_No_Pumping,
+           Vel_P = Velocity_Pumping) %>%
+    tidyr::pivot_longer(cols = c("Vel_NP", "Vel_P"), names_to = "Pumping", values_to = "Velocity")
+
+  # Plot density distributions------------------------------------
+  (plot1 <- ggplot(vel_data) +
+    geom_boxplot(aes(x = OMR2, y = vdiff, color = timestep, fill = timestep), alpha = 0.5) +
+     scale_color_manual(values = c("steelblue4", "indianred")) +
+     scale_fill_manual(values = c("steelblue4", "indianred")) +
+    labs(title = paste0("Velocity Difference Distribution \nNode:", nodeNum), y = "Velocity Difference (fps)") +
+    theme_bw()+
+    theme(legend.position = "top",
+          axis.text = element_text(size = 13),
+          legend.text = element_text(size = 12)))
+
+  (plot2 <- ggplot(vel_data_long, aes(x = Velocity, fill = Pumping, alpha = Pumping)) +
+      geom_histogram(position = "identity",  binwidth = 0.01) +
+      facet_grid(timestep~OMR2, scales = "free_y" ) +
+      scale_fill_manual(values = c("steelblue4", "indianred")) +
+      scale_alpha_manual(values = c(0.8, 0.4)) +
+      labs(title = paste0("Velocity Distributions \nNode:", nodeNum), x = "Velocity (fps)") +
+      theme_bw()+
+      theme(legend.position = "top",
+            axis.text = element_text(size = 13),
+            legend.text = element_text(size = 12),
+            strip.text = element_text(size = 13)))
+
+  (plot3 <- ggplot(vel_data, aes(x = vdiff, fill = timestep, alpha = timestep)) +
+      geom_histogram(position = "identity", binwidth = 0.001) +
+      facet_wrap(~OMR2, dir = "v") +
+      scale_fill_manual(values = c("steelblue4", "indianred")) +
+      scale_alpha_manual(values = c(0.8, 0.4)) +
+      labs(title = paste0("Velocity Difference Distribution \nNode:", nodeNum), x = "Velocity Difference (fps)") +
+      theme_bw()+
+      theme(legend.position = "top",
+            axis.text = element_text(size = 13),
+            legend.text = element_text(size = 12),
+            strip.text = element_text(size = 13)))
+
+
+  # Save plots ----------------------------------
+  ggsave(filename=paste0("figures/vel_plots/boxplots_", nodeNum, ".png"), plot=plot1, height = 6, width = 7, units = "in")
+  ggsave(filename=paste0("figures/vel_plots/histogram_vel_", nodeNum, ".png"), plot=plot2, height = 6, width = 7, units = "in")
+  ggsave(filename=paste0("figures/vel_plots/histogram_vdiff_", nodeNum, ".png"), plot=plot3, height = 6, width = 7, units = "in")
+
+}
