@@ -172,14 +172,20 @@ diff_vel <- function(df, nodeNum, chanNum) {
     filter(node == nodeNum & channel_number == chanNum) %>%
     mutate(OMR2 = case_when(monthlyOMR >= -5500 & monthlyOMR <= -4500 ~ -5000,
                             monthlyOMR >= -3500 & monthlyOMR <= -2500 ~ -3000,
-                            monthlyOMR >= -2500 & monthlyOMR <= -1500 ~ -2000)) %>%
-    dplyr::filter(OMR2 %in% c(-5000, -3000, -2000)) %>%
+                            monthlyOMR >= -2500 & monthlyOMR <= -1500 ~ -2000),
+           InflowGrp = case_when(monthlySAC >=12453 & monthlySAC <=20905 & monthlySJR >=1273.5 & monthlySJR <=2122.5 ~ "A",
+                                 monthlySAC >=12453 & monthlySAC <=20905 & monthlySJR >=1859.5 & monthlySJR <=3098.1 ~ "B",
+                                 monthlySAC >=12453 & monthlySAC <=20905 & monthlySJR >=4209.8 & monthlySJR <=7016.2 ~ "C",
+                                 monthlySAC >=9715.7 & monthlySAC <=16192.8 & monthlySJR >=1859.5 & monthlySJR <=3098.1 ~ "D",
+                                 monthlySAC >=22911.8 & monthlySAC <=38186.2 & monthlySJR >=1859.5 & monthlySJR <=3098.1 ~ "E")) %>%
+    dplyr::filter(OMR2 %in% c(-5000, -3000, -2000),
+                  InflowGrp %in% c("A", "B", "C", "D", "E")) %>%
     mutate(OMR2 = factor(OMR2, levels = c("-2000", "-3000", "-5000"))) %>%
     mutate(vdiff = Velocity_Pumping-Velocity_No_Pumping,
            timestep = "hourly")
 
   # Dailify data -----------------------------------------
-  daily <- hourly %>% group_by(date, channel_id, channel_number, node, monthlyOMR, OMR2) %>%
+  daily <- hourly %>% group_by(date, channel_id, channel_number, node, monthlyOMR, InflowGrp, OMR2) %>%
     summarize(Velocity_Pumping = mean(Velocity_Pumping, na.rm = TRUE),
               Velocity_No_Pumping = mean(Velocity_No_Pumping, na.rm = TRUE),
               OMR = mean(OMR, na.rm = TRUE),
@@ -192,7 +198,7 @@ diff_vel <- function(df, nodeNum, chanNum) {
   # Combine data --------------------------------------------
   vel_data <- bind_rows(hourly, daily)
   vel_data_long <- vel_data %>%
-    dplyr::select(Velocity_Pumping, Velocity_No_Pumping, OMR2, timestep) %>%
+    dplyr::select(Velocity_Pumping, Velocity_No_Pumping, InflowGrp, OMR2, timestep) %>%
     rename(Vel_NP = Velocity_No_Pumping,
            Vel_P = Velocity_Pumping) %>%
     tidyr::pivot_longer(cols = c("Vel_NP", "Vel_P"), names_to = "Pumping", values_to = "Velocity")
@@ -237,5 +243,6 @@ diff_vel <- function(df, nodeNum, chanNum) {
   ggsave(filename=paste0("figures/vel_plots/boxplots_", nodeNum, ".png"), plot=plot1, height = 6, width = 7, units = "in")
   ggsave(filename=paste0("figures/vel_plots/histogram_vel_", nodeNum, ".png"), plot=plot2, height = 6, width = 7, units = "in")
   ggsave(filename=paste0("figures/vel_plots/histogram_vdiff_", nodeNum, ".png"), plot=plot3, height = 6, width = 7, units = "in")
-
+ # Return data
+  return(vel_data)
 }

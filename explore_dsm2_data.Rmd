@@ -110,6 +110,15 @@ file5 <- read_csv("data_raw/channel_ids_100_through_109.csv") %>%
   filter(month(Date) %in% c(1, 2, 3, 4, 5, 6))%>%
   filter(node == 93, channel_number == 108)
 
+# This one is for node 461/50
+file6 <- read_csv("data_raw/channel_ids_50_through_59.csv") %>%
+  rename(OMR = `OMR (cfs)`,
+         SAC = `SAC Freeport (cfs)`,
+         SJR = `SJR Vernalis (cfs)`)%>%
+  filter(month(Date) %in% c(1, 2, 3, 4, 5, 6))%>%
+  filter(node == 461, channel_number == 51)
+
+
 glimpse(file1)
 
 # dsm2_files <- list.files("data_raw/", pattern = "*.csv", full.names = TRUE)
@@ -119,13 +128,15 @@ glimpse(file1)
 
 # Calculate average monthly OMR
 ```{r}
-# combination of 5 nodes (listed above)-----------------
-file <- rbind(file1, file2, file3, file4, file5) %>%
+# combination of nodes (listed above)-----------------
+file <- rbind(file1, file2, file3, file4, file5, file6) %>%
   mutate(month = month(Date),
          year = year(Date), 
          date = date(Date)) %>%
   group_by(node, month, year) %>%
-  mutate(monthlyOMR = mean(OMR, na.rm = TRUE)) %>%
+  mutate(monthlyOMR = mean(OMR, na.rm = TRUE),
+         monthlySAC = mean(SAC, na.rm = TRUE),
+         monthlySJR = mean(SJR, na.rm = TRUE)) %>%
   ungroup()
 
 # node 8-----------------------------------
@@ -206,13 +217,14 @@ ggplot(node20) +
 ```{r}
 source("functions.R")
 
+result_461 <- calc_overlap(file, nodeNum = 461, chanNum = 51)
 result_351 <- calc_overlap(file, nodeNum = 351, chanNum = 431)
 result_93 <- calc_overlap(file, nodeNum = 93, chanNum = 108)
 result_38 <- calc_overlap(file, nodeNum = 38, chanNum = 43)
 result_31 <- calc_overlap(file, nodeNum = 31, chanNum = 35)
 result_26 <- calc_overlap(file, nodeNum = 26, chanNum = 30)
 
-hourly_results <- bind_rows(result_351, result_93, result_38, result_31, result_26) %>%
+hourly_results <- bind_rows(result_461, result_351, result_93, result_38, result_31, result_26) %>%
   mutate(timestep = "hourly")
 ```
 
@@ -268,8 +280,9 @@ result_d31 <- calc_overlap_daily(file, nodeNum = 31, chanNum = 35)
 result_d38 <- calc_overlap_daily(file, nodeNum = 38, chanNum = 43)
 result_d93 <- calc_overlap_daily(file, nodeNum = 93, chanNum = 108)
 result_d351 <- calc_overlap_daily(file, nodeNum = 351, chanNum = 431)
+result_d461 <- calc_overlap_daily(file, nodeNum = 461, chanNum = 51)
 
-daily_results <- bind_rows(result_d351, result_d93, result_d38, result_d31, result_d26) %>%
+daily_results <- bind_rows(result_d461, result_d351, result_d93, result_d38, result_d31, result_d26) %>%
   mutate(timestep = "daily")
 
 ```
@@ -287,16 +300,36 @@ dev.off()
 ```
 
 
-
-
-
 # Create metric of median velocity difference
 ```{r}
 source("functions.R")
 
-diff_vel(file, nodeNum = 351, chanNum = 431)
-diff_vel(file, nodeNum = 93, chanNum = 108)
-diff_vel(file, nodeNum = 38, chanNum = 43)
-diff_vel(file, nodeNum = 31, chanNum = 35)
-diff_vel(file, nodeNum = 26, chanNum = 30)
+vel_result_461 <- diff_vel(file, nodeNum = 461, chanNum = 51)
+vel_result_431 <-diff_vel(file, nodeNum = 351, chanNum = 431)
+vel_result_93 <-diff_vel(file, nodeNum = 93, chanNum = 108)
+vel_result_38 <-diff_vel(file, nodeNum = 38, chanNum = 43)
+vel_result_31 <-diff_vel(file, nodeNum = 31, chanNum = 35)
+vel_result_26 <-diff_vel(file, nodeNum = 26, chanNum = 30)
+
+vel_results <- rbind(vel_result_461, vel_result_431, vel_result_93, vel_result_38, vel_result_31, vel_result_26) %>%
+  select(Date, month, year, date, channel_id, channel_number, node, InflowGrp, OMR2, SAC, SJR,  timestep, vdiff)
+
+vel_results_summary <- vel_results %>%
+  mutate(over_thresh=if_else(abs(vdiff) > 0.1, 1L, 0L)) %>%
+  group_by(year, node, channel_id, channel_number, InflowGrp, OMR2) %>%
+  reframe(n = n(),
+          mean_vdiff = mean(vdiff, na.rm = TRUE),
+          prop_over_thresh = over_thresh/n) %>%
+  distinct()
+
+ggplot(vel_results_summary) + geom_col(aes(x = OMR2, y = prop_over_thresh)) + facet_wrap(~InflowGrp)
+ggplot(vel_results_summary) + geom_col(aes(x = OMR2, y = mean_vdiff)) + facet_grid(node~InflowGrp)
+
+vel_results_summary2 <- vel_results_summary %>%
+  group_by()
 ```
+
+```{r}
+
+```
+
