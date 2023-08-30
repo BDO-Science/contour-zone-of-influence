@@ -3,7 +3,6 @@ rm(list=ls())
 #library("epanetReader")
 library("car")
 library("dplyr")
-
 ##################################################
 #ZOI.dat <- read.inp("hydro_echo_NAA_20220624.inp")
 #str(ZOI.dat)
@@ -35,6 +34,13 @@ flow.months <- flow.dat %>%
 
 Sac.quant <- quantile(flow.months$Sac.cfs, probs = c(0.25, 0.5, 0.75))
 Sjr.quant <- quantile(flow.months$SJR.cfs, probs = c(0.25, 0.5, 0.75))
+
+SacL = Sac.quant[[1]]
+SacM = Sac.quant[[2]]
+SacH = Sac.quant[[3]]
+SjrL = Sjr.quant[[1]]
+SjrM = Sjr.quant[[2]]
+SjrH = Sjr.quant[[3]]
 # Sac.quant <- quantile(flow.dat$Sac.cfs, probs = c(0.2, 0.5, 0.8))
 # Sjr.quant <- quantile(flow.dat$SJR.cfs, probs = c(0.2, 0.5, 0.8))
 
@@ -66,31 +72,44 @@ nrow(Flow.subset)
 
 # Subset to multiple groups
 Flow.subset <- flow.months %>%
-  mutate(A = ifelse(Sac.cfs <=  1.25*Sac.quant[[2]] &
-                      Sac.cfs >=  0.75*Sac.quant[[2]] &
-                      SJR.cfs <= 1.25*Sjr.quant[[1]] &
-                      SJR.cfs >= 0.75*Sjr.quant[[1]], "A", ""),
-          B =  ifelse(Sac.cfs <=  1.25*Sac.quant[[2]] &
-                        Sac.cfs >=  0.75*Sac.quant[[2]] &
-                        SJR.cfs <= 1.25*Sjr.quant[[2]] &
-                        SJR.cfs >= 0.75*Sjr.quant[[2]], "B", ""),
-          C = ifelse(Sac.cfs <=  1.25*Sac.quant[[2]] &
-                    Sac.cfs >=  0.75*Sac.quant[[2]] &
-                    SJR.cfs <= 1.25*Sjr.quant[[3]] &
-                    SJR.cfs >= 0.75*Sjr.quant[[3]], "C", ""),
-          D = ifelse(SJR.cfs <=  1.25*Sjr.quant[[2]] &
-                           SJR.cfs >=  0.75*Sjr.quant[[2]] &
-                           Sac.cfs <= 1.25*Sac.quant[[1]] &
-                           Sac.cfs >= 0.75*Sac.quant[[1]], "D", ""),
-           E = ifelse(SJR.cfs <=  1.25*Sjr.quant[[2]] &
-                                  SJR.cfs >=  0.75*Sjr.quant[[2]] &
-                                  Sac.cfs <= 1.25*Sac.quant[[3]] &
-                                  Sac.cfs >= 0.75*Sac.quant[[3]], "E", "")
-         ) %>%
-  mutate(Sub.group = paste0(A, B, C, D, E)) %>%
+  mutate(A = if_else(Sac.cfs <= 1.25*SacM & Sac.cfs >=0.75*SacM & SJR.cfs <= 1.25* SjrL & SJR.cfs >= 0.75* SjrL, "A", ""),
+         B = if_else(Sac.cfs <= 1.25*SacM & Sac.cfs >=0.75*SacM & SJR.cfs <= 1.25* SjrM & SJR.cfs >= 0.75* SjrM, "B", ""),
+         C = if_else(Sac.cfs <= 1.25*SacM & Sac.cfs >=0.75*SacM & SJR.cfs <= 1.25* SjrH & SJR.cfs >= 0.75* SjrH, "C", ""),
+         D = if_else(Sac.cfs <= 1.25*SacL & Sac.cfs >=0.75*SacL & SJR.cfs <= 1.25* SjrM & SJR.cfs >= 0.75* SjrM, "D", ""),
+         E = if_else(Sac.cfs <= 1.25*SacH & Sac.cfs >=0.75*SacH & SJR.cfs <= 1.25* SjrM & SJR.cfs >= 0.75* SjrM, "E", ""),
+         F = if_else(Sac.cfs <= 1.25*SacL & Sac.cfs >=0.75*SacL & SJR.cfs <= 1.25* SjrL & SJR.cfs >= 0.75* SjrL, "F", ""),
+         G = if_else(Sac.cfs <= 1.25*SacH & Sac.cfs >=0.75*SacH & SJR.cfs <= 1.25* SjrH & SJR.cfs >= 0.75* SjrH, "G", ""))%>%
+  mutate(Sub.group = paste0(A, B, C, D, E, F, G)) %>%
   filter(Sub.group != "") %>%
-  select(-A, -B, -C, -D, -E) %>%
+  select(-A, -B, -C, -D, -E, -F, -G) %>%
   arrange(OMR)
+
+# Flow.subset <- flow.months %>%
+#   mutate(A = ifelse(Sac.cfs <=  1.25*Sac.quant[[2]] &
+#                       Sac.cfs >=  0.75*Sac.quant[[2]] &
+#                       SJR.cfs <= 1.25*Sjr.quant[[1]] &
+#                       SJR.cfs >= 0.75*Sjr.quant[[1]], "A", ""),
+#           B =  ifelse(Sac.cfs <=  1.25*Sac.quant[[2]] &
+#                         Sac.cfs >=  0.75*Sac.quant[[2]] &
+#                         SJR.cfs <= 1.25*Sjr.quant[[2]] &
+#                         SJR.cfs >= 0.75*Sjr.quant[[2]], "B", ""),
+#           C = ifelse(Sac.cfs <=  1.25*Sac.quant[[2]] &
+#                     Sac.cfs >=  0.75*Sac.quant[[2]] &
+#                     SJR.cfs <= 1.25*Sjr.quant[[3]] &
+#                     SJR.cfs >= 0.75*Sjr.quant[[3]], "C", ""),
+#           D = ifelse(SJR.cfs <=  1.25*Sjr.quant[[2]] &
+#                            SJR.cfs >=  0.75*Sjr.quant[[2]] &
+#                            Sac.cfs <= 1.25*Sac.quant[[1]] &
+#                            Sac.cfs >= 0.75*Sac.quant[[1]], "D", ""),
+#            E = ifelse(SJR.cfs <=  1.25*Sjr.quant[[2]] &
+#                                   SJR.cfs >=  0.75*Sjr.quant[[2]] &
+#                                   Sac.cfs <= 1.25*Sac.quant[[3]] &
+#                                   Sac.cfs >= 0.75*Sac.quant[[3]], "E", "")
+#          ) %>%
+#   mutate(Sub.group = paste0(A, B, C, D, E)) %>%
+#   filter(Sub.group != "") %>%
+#   select(-A, -B, -C, -D, -E) %>%
+#   arrange(OMR)
 
 ### Summarize counts of OMR across groups ###
 
@@ -100,7 +119,7 @@ Flow.sum <- Flow.subset %>%
   as.data.frame(Flow.sum)
 
 Flow.sum
-# readr::write_csv(Flow.subset, "flow.subset.table.csv")
+ readr::write_csv(Flow.subset, "flow.subset.table.csv")
 # readr::write_csv(Flow.sum, "flow.summary.table.csv")
 
 ## Added: plot the subsetted data to check -----------------------------------
