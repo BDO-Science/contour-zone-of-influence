@@ -1,0 +1,8 @@
+Group,Description,Sac Flow Range (cfs),SJR Flow Range (cfs)
+lolo,Low SAC Low SJR,9364.6-12954.2,1090.6-1698
+medmed,Med SAC Med SJR,12954.2-30549,1698-5613
+hihi,High SAC High SJR,30549-63411.9,5613-12312.8
+himed,High SAC Med SJR,30549-63411.9,1698-5613
+medhi,Med SAC High SJR,12954.2-30549,5613-12312.8
+lomed,Low SAC Med SJR,9364.6-12954.2,1698-5613
+medlo,Med SAC Low SJR,12954.2-30549,1090.6-1698
