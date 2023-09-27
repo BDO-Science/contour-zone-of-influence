@@ -73,15 +73,17 @@ Flow.subsetall  <- flow.months %>%
          hilo = if_else(Sac.cfs <= SacH & Sac.cfs >=SacM & SJR.cfs <  SjrL & SJR.cfs >=  Sjr0, "hilo", ""),
          lomed = if_else(Sac.cfs < SacL & Sac.cfs >=Sac0 & SJR.cfs <  SjrM & SJR.cfs >=  SjrL, "lomed", ""),
          medlo = if_else(Sac.cfs < SacM& Sac.cfs >=SacL & SJR.cfs <  SjrL & SJR.cfs >=  Sjr0, "medlo", "")) %>%
-  mutate(Sub.group = paste0(lolo, medmed, hihi, himed, medhi, lohi, hilo,lomed, medlo))
-
-# Remove extra variables
-Flow.subset.clean <- Flow.subsetall %>%
-  filter(Sub.group != "") %>%
-  filter(OMR_group!="Other") %>%
+  mutate(Sub.group = paste0(lolo, medmed, hihi, himed, medhi, lohi, hilo,lomed, medlo))%>%
   select(-lolo, -medmed, -hihi, -himed, -medhi, -lohi, -hilo, -lomed, -medlo)
 
-# Summarize sample sizes -----------------------------------------------------
+# Remove extra variables and OMR groups not within those defined
+Flow.subset.clean <- Flow.subsetall %>%
+  filter(Sub.group != "") %>%
+  filter(OMR_group!="Other")
+
+# Summarize data -----------------------------------------------------
+
+# Calculate mean exports and OMR for inflow groups
 Flow.subset.sumstats <- Flow.subsetall %>%
   group_by(Sub.group) %>%
   summarize(meanOMR = round(mean(OMR),0),
@@ -118,6 +120,7 @@ Flow.OMR.subset.summary <- Flow.subset.clean %>%
          ` Mean Exports (cfs)` = meanExports,
          n)
 
+# Include groups with no data
 Flow.OMR.complete <- Flow.OMR.subset.summary %>%
   complete(`Inflow Group`,
            nesting(`OMR Group`, `OMR_Range`),
@@ -127,7 +130,6 @@ Flow.OMR.complete <- Flow.OMR.subset.summary %>%
 # write_csv(Flow.subset.clean, "data_export/flow_subsets_month_year_NAA.csv")
 # write_csv(Flow.subset.summary, "data_export/flow_subsets_samplesize_NAA_equalspaced.csv")
 write_csv(Flow.OMR.complete, "data_export/flow_omr_samplesizes.csv")
-
 
 # Plot of OMR and Exports
 ggplot(Flow.subset.clean) +
