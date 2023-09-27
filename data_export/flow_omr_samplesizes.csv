@@ -1,0 +1,37 @@
+Inflow Group,OMR Group,OMR_Range,Mean OMR (cfs), Mean Exports (cfs),n
+hihi,-2000,-2500 to -1500 cfs,-1979,7624,12
+hihi,-3500,-4000 to -3000 cfs,-3566,8617,39
+hihi,-5000,-5500 to -4500 cfs,-4735,9849,27
+hihi,less than -5500,less than -5500,NA,NA,0
+hilo,-2000,-2500 to -1500 cfs,NA,NA,0
+hilo,-3500,-4000 to -3000 cfs,-3645,5344,3
+hilo,-5000,-5500 to -4500 cfs,-4882,6455,13
+hilo,less than -5500,less than -5500,NA,NA,0
+himed,-2000,-2500 to -1500 cfs,-2285,3100,4
+himed,-3500,-4000 to -3000 cfs,-3567,5811,13
+himed,-5000,-5500 to -4500 cfs,-4958,7483,25
+himed,less than -5500,less than -5500,NA,NA,0
+lohi,-2000,-2500 to -1500 cfs,-2051,4273,13
+lohi,-3500,-4000 to -3000 cfs,-3409,7673,6
+lohi,-5000,-5500 to -4500 cfs,-4915,6721,2
+lohi,less than -5500,less than -5500,NA,NA,0
+lolo,-2000,-2500 to -1500 cfs,-1933,2281,41
+lolo,-3500,-4000 to -3000 cfs,-3526,4294,17
+lolo,-5000,-5500 to -4500 cfs,-4941,6046,23
+lolo,less than -5500,less than -5500,-6991,8341,10
+lomed,-2000,-2500 to -1500 cfs,-2084,3041,28
+lomed,-3500,-4000 to -3000 cfs,-3474,4911,9
+lomed,-5000,-5500 to -4500 cfs,-4841,6008,15
+lomed,less than -5500,less than -5500,NA,NA,0
+medhi,-2000,-2500 to -1500 cfs,-2081,4385,10
+medhi,-3500,-4000 to -3000 cfs,-3517,6907,7
+medhi,-5000,-5500 to -4500 cfs,-5015,8577,8
+medhi,less than -5500,less than -5500,NA,NA,0
+medlo,-2000,-2500 to -1500 cfs,-1512,2963,1
+medlo,-3500,-4000 to -3000 cfs,-3633,5038,6
+medlo,-5000,-5500 to -4500 cfs,-4990,5761,54
+medlo,less than -5500,less than -5500,-8137,9678,9
+medmed,-2000,-2500 to -1500 cfs,-2124,3253,28
+medmed,-3500,-4000 to -3000 cfs,-3591,5371,21
+medmed,-5000,-5500 to -4500 cfs,-4908,6464,25
+medmed,less than -5500,less than -5500,-8530,10782,3

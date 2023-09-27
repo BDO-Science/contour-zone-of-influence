@@ -1,0 +1,10 @@
+Inflow Group,Description,SR Flow Range (cfs),SJR Flow Range (cfs),Mean OMR (cfs),Mean Exports (cfs),n
+lolo,Low SR Low SJR,5117 - 13416,890 - 1984,-3049,3745,132
+medmed,Med SR Med SJR,13416 - 24726,1984 - 4097,-3758,5328,101
+hihi,High SR High SJR,24726 - 87222,4097 - 61005,-2005,9227,152
+himed,High SR Med SJR,24726 - 87222,1984 - 4097,-4242,6548,62
+medhi,Med SR High SJR,13416 - 24726,4097 - 61005,-2506,6271,51
+lomed,Low SR Med SJR,5117 - 13416,1984 - 4097,-2805,3864,70
+medlo,Med SR Low SJR,13416 - 24726,890 - 1984,-5070,6069,81
+lohi,Low SR High SJR,5117 - 13416,4097 - 61005,-2916,5713,31
+hilo,High SR Low SJR,24726 - 87222,890 - 1984,-4562,6158,20
