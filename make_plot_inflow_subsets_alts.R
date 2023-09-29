@@ -127,7 +127,8 @@ Flow.OMR.complete <- Flow.OMR.subset.summary %>%
            fill = list(n = 0))
 
 # Write file
-# write_csv(Flow.subset.clean, "data_export/flow_subsets_month_year_NAA.csv")
+write_csv(Flow.subsetall, "data_export/flow_omr_subsets_month_year_dectojun.csv")
+write_csv(Flow.subset.clean, "data_export/flow_omr_subsets_month_year_clean.csv")
 # write_csv(Flow.subset.summary, "data_export/flow_subsets_samplesize_NAA_equalspaced.csv")
 write_csv(Flow.OMR.complete, "data_export/flow_omr_samplesizes.csv")
 
