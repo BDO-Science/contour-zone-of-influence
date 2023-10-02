@@ -26,9 +26,13 @@ colnames(omr.dat) = c("Row", "Date", "OMR")
 # read export data
 export.dat <- read_excel("data_inflow/Reclamation_2021LTO_CalSim3_DeltaExports_rev01_20230926__NAA_090723.xlsx", skip = 6)
 colnames(export.dat) = c("Row", "Date", "Exports")
+# read wytype
+wytype <- read.csv("WYType.csv") %>% mutate(WY = as.numeric(WY)) %>% filter(Basin == "SacramentoValley")
 # join all together and define OMR groupings
 flow.dat <- left_join(flow.dat1, omr.dat) %>%
   left_join(export.dat) %>%
+  mutate(WY = if_else(Month>9, Year+1, Year)) %>%
+  left_join(wytype %>% select(WY, Yr.type)) %>%
   select(-Row) %>%
   mutate(OMR_group = case_when(OMR >= -2500 & OMR <=-1500 ~ "-2000",
                                OMR >= -4000 & OMR <=-3000 ~ "-3500",
@@ -136,6 +140,10 @@ write_csv(Flow.OMR.complete, "data_export/flow_omr_samplesizes.csv")
 ggplot(Flow.subset.clean) +
   geom_point(aes(OMR, Exports, color = Sub.group), size = 3)
 
+ggplot(Flow.subset.clean) +
+  geom_point(aes(Sac.cfs, SJR.cfs, color = OMR_group), size = 3) +
+  geom_smooth(aes(x = Sac.cfs, y = SJR.cfs, color = OMR_group), method = "lm")
+
 # Look at stormflex
 Stormflex.data <- Flow.subsetall %>%
   filter(OMR_group == "less than -5500") %>%
@@ -188,6 +196,23 @@ library(patchwork)
 png("figures/allflowvals_groups_NAA_OMR_plot.png", width = 9, height = 7, units = "in", res = 300, pointsize = 12)
 plot
 dev.off()
+
+# Plot of WYtype and OMR groupings ---------------------------------------------
+(plot_allvals <- ggplot() +
+   geom_point(data = flow.months, aes(x=Sac.cfs, y=SJR.cfs), shape = 15, size = 2, color = "gray80") +
+   geom_point(data = Flow.subset.clean , aes(x = Sac.cfs, y = SJR.cfs, color = Yr.type, shape = OMR_group), size = 4) +
+   geom_vline(xintercept = SacMed, linetype = "dashed")+
+   geom_hline(yintercept = SjrMed, linetype = "dashed")+
+   scale_shape_manual(values = c(21, 22, 23, 24, 25)) +
+   scale_color_viridis_d(option = "turbo")+
+   labs(x = "Sacramento Inflow (cfs)", y = "San Joaquin Inflow (cfs)", color = "WY Type", shape = "OMR") +
+   theme_bw() +
+   theme(axis.text = element_text(size = 12),
+         axis.title = element_text(size = 11),
+         legend.text = element_text(size = 11),
+         legend.title = element_text(size = 12),
+         legend.position = "top",
+         legend.box = "vertical"))
 
 
 # Clean table for summary statistics --------------------------------------------------------
