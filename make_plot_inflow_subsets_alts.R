@@ -14,20 +14,20 @@ library(tidyr)
 
 # Read dat -------------------------------
 # flow.dat <- read.csv("data_inflow/Inflow.csv") # This file will change based on new Calsim results
-flow.dat0 <- read_excel("data_inflow/Reclamation_2021LTO_CalSim3_SacFreeport_SanJoaquinVernalis_rev01_20230913__NAA_090723.xlsx", skip = 6)
+flow.dat0 <- read_excel("data_raw/calsim/Reclamation_2021LTO_CalSim3_SacFreeport_SanJoaquinVernalis_rev01_20230913__NAA_090723.xlsx", skip = 6)
 colnames(flow.dat0) = c("Row", "Date", "Sac.cfs", "SJR.cfs")
 flow.dat1 <- flow.dat0 %>%
   select(-Row) %>%
   mutate(Month = month(Date),
          Year = year(Date))
 # read omr data
-omr.dat <- read_excel("data_inflow/Reclamation_2021LTO_CalSim3_OMR_rev01_20230913__NAA_090723.xlsx", skip = 6)
+omr.dat <- read_excel("data_raw/calsim/Reclamation_2021LTO_CalSim3_OMR_rev01_20230913__NAA_090723.xlsx", skip = 6)
 colnames(omr.dat) = c("Row", "Date", "OMR")
 # read export data
-export.dat <- read_excel("data_inflow/Reclamation_2021LTO_CalSim3_DeltaExports_rev01_20230926__NAA_090723.xlsx", skip = 6)
+export.dat <- read_excel("data_raw/calsim/Reclamation_2021LTO_CalSim3_DeltaExports_rev01_20230926__NAA_090723.xlsx", skip = 6)
 colnames(export.dat) = c("Row", "Date", "Exports")
 # read wytype
-wytype <- read.csv("WYType.csv") %>% mutate(WY = as.numeric(WY)) %>% filter(Basin == "SacramentoValley")
+wytype <- read.csv("data_raw/WYType.csv") %>% mutate(WY = as.numeric(WY)) %>% filter(Basin == "SacramentoValley")
 # join all together and define OMR groupings
 flow.dat <- left_join(flow.dat1, omr.dat) %>%
   left_join(export.dat) %>%
@@ -193,7 +193,7 @@ library(patchwork)
 (plot <- plot_allvals + inset_element(plot_zoom, left = 0.02, bottom = 0.55, right = 0.6, top = 0.97))
 
 # Write plot
-png("figures/allflowvals_groups_NAA_OMR_plot.png", width = 9, height = 7, units = "in", res = 300, pointsize = 12)
+png("figures/attachment_plots/allflowvals_groups_NAA_OMR_plot.png", width = 9, height = 7, units = "in", res = 300, pointsize = 12)
 plot
 dev.off()
 

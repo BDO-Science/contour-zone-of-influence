@@ -20,7 +20,7 @@ library(ggpattern)
 
 
 # Read/Join data ---------------------------------------------------------
-zoi_file_NAA = list.files("data_inflow", pattern = "NAA_.*csv$", full.names = TRUE)
+zoi_file_NAA = list.files("data_raw", pattern = "NAA_.*csv$", full.names = TRUE)
 #zoi_file_D1641
 zoi_data <- lapply(zoi_file_NAA, read_csv) %>%
   bind_rows(.id = "id") %>%
@@ -129,7 +129,7 @@ png("figures/proportional_channel_length_dropnodes.png", width = 7, height = 9, 
 barplot_omr
 dev.off()
 
-png("figures/stacked_barplot_channellengths.png", width = 7, height = 8, units = "in", res = 300, pointsize = 9)
+png("figures/attachment_plots/stacked_barplot_channellengths.png", width = 7, height = 8, units = "in", res = 300, pointsize = 9)
 stacked_barplot
 dev.off()
 
