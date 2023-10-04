@@ -34,7 +34,7 @@ library(viridis)
 
 # Read/Join data ---------------------------------------------------------
 delta <- st_read("shapefiles/Bay_Delta_Poly_New.shp")
-zoi_file_NAA = list.files("data_inflow", pattern = "NAA_.*csv$", full.names = TRUE)
+zoi_file_NAA = list.files("data_raw", pattern = "NAA_.*csv$", full.names = TRUE)
 #zoi_file_D1641
 zoi_data <- lapply(zoi_file_NAA, read_csv) %>%
   bind_rows(.id = "id") %>%
@@ -44,7 +44,7 @@ nodes <- st_read("shapefiles/nodes.shp") %>%
   dplyr::select(node)
 nodes_4326 <- st_transform(nodes, crs = 4326) %>%
   mutate(points = "DSM2 nodes")
-channels0 <- read_csv("data_updatedDSM2/Reclamation_2021LTO_DSM2_Version806_ChannelLengths.csv") %>%
+channels0 <- read_csv("data_raw/Reclamation_2021LTO_DSM2_Version806_ChannelLengths.csv") %>%
   janitor::clean_names()  %>%
   rename(channel_number = chan_no)
 
