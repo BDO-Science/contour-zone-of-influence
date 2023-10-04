@@ -3,4 +3,4 @@
 .RData
 .Ruserdata
 
-data_raw/channel_ids_*
+data_raw/hourly_velocity/channel_ids_*
