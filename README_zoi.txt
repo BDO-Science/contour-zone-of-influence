@@ -12,3 +12,8 @@ Files:
 3. Contour Plots: contour_maps_inflow.R
 4. Channel length analyses: channel_lengths_barplots.R
 5. Original contour map and channel length analyses based on month: make_contours_updatedDSM2.R
+
+Files not directly used in LTO: 
+
+1. View nodes: node_map.Rmd
+2. See how months correspond to inflow groups: make_month_subsetgroup_plots.R
