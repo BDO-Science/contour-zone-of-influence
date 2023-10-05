@@ -8,7 +8,7 @@ Reclamation or the U.S. Government shall not be held liable for improper or inco
 Files:
 
 1. Inflow group crosswalk: data_raw/Reclamation_2021LTO_SacR_SJR_OMR_Binning_rev01_20230929_result.xlsx
-2. Inflow and OMR groupings based on NAA and detailed in: make_plot_inflow_subsets.R
+2. Inflow and OMR groupings based on NAA and detailed in: make_plot_inflow_subsets_NAA.R
 3. Contour Plots: contour_maps_inflow.R
 4. Channel length analyses: channel_lengths_barplots.R
 5. Original contour map and channel length analyses based on month: make_contours_updatedDSM2.R
