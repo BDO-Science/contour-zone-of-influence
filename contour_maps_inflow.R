@@ -38,7 +38,7 @@ zoi_file_NAA = list.files("data_raw", pattern = "NAA_.*csv$", full.names = TRUE)
 #zoi_file_D1641
 zoi_data <- lapply(zoi_file_NAA, read_csv) %>%
   bind_rows(.id = "id") %>%
-  mutate(id = paste0("-", substr(zoi_file_NAA[as.numeric(id)], 36, 39))) %>%
+  mutate(id = paste0("-", substr(zoi_file_NAA[as.numeric(id)], 33, 36))) %>%
   rename(OMR_Flow = id)
 nodes <- st_read("shapefiles/nodes.shp") %>%
   dplyr::select(node)
@@ -50,9 +50,9 @@ channels0 <- read_csv("data_raw/Reclamation_2021LTO_DSM2_Version806_ChannelLengt
 
 # Drop nodes that are causing issues
 dropNodes <- c(146, 147, 148, 206, 242, 246, 432, 433, 434)
+# Drop duplicate channels
 channels1 <- channels0[!channels0$upnode %in% dropNodes, ]
 channels <- channels1[!channels1$downnode %in% dropNodes, ]
-
 total_channel_length <- sum(channels$length_feet)
 
 # Join channel lengths with zoi data
@@ -60,7 +60,7 @@ total_channel_length <- sum(channels$length_feet)
 zoi_channel <- left_join(zoi_data, channels)
 zoi_channel <- merge(zoi_data, channels, by = "channel_number")
 
-# Change all to 4326 (WGS)
+# Change projections to 4326 (WGS)
 delta_4326 <- st_transform(delta, crs = 4326) %>%
   mutate(line = "analysis boundary")
 nodes_4326 <- st_transform(nodes, crs = 4326) %>%
@@ -70,6 +70,7 @@ WW_Delta_crop <- st_crop(WW_Delta_4326,xmin = -122.2, xmax = -121, ymin = 37.5, 
   filter(HNAME!= "SAN FRANCISCO BAY")
 plot(WW_Delta_crop)
 
+# Convert data frame to long
 zoi_channel_long <- zoi_channel %>%
   pivot_longer(cols = c(A:E), names_to = "group", values_to = "DSM2")
 
@@ -77,6 +78,9 @@ zoi_channel_long <- zoi_channel %>%
 # Functions ------------------------------------
 
 # Create data frame for each month and flow level
+# @group = inflow group
+# @flow = OMR flow group
+# produces an "sp" object
 create_df <- function(groupname, flow) {
   group_data <- zoi_channel_long %>%
     dplyr::select(OMR_Flow, node, channel_number, length_feet, upnode, downnode, group, DSM2)
@@ -92,7 +96,10 @@ create_df <- function(groupname, flow) {
   return(df_filt_sp)
 }
 
-# create interpolations
+# create spatial interpolations of proportion overlap from data frame within delta mask
+# @df = data frame
+# @mask = spatial shapefile mask
+# produces a raster
 interp_nodes <- function(df, mask=delta_sp) {
 
   grd <- as.data.frame(spsample(df, "regular", n = 50000))
@@ -117,10 +124,9 @@ interp_nodes <- function(df, mask=delta_sp) {
 }
 
 # Map making function
-# @group = group, lower case (feb, mar, apr, may)
-# @clevel = contour level (0.75, 0.25)
+# @group = inflow group
+# @clevel = proportion overlap contour level (0.75, 0.25)
 # produces map
-
 make_map <- function(grp, clevel){
 
   # Make a dataset that filters contours for group and contour level of interest. This needs to run
@@ -143,31 +149,9 @@ make_map <- function(grp, clevel){
       theme_classic())
 }
 
-
-
-#
-# # Filter to correct similarity level (e.g. 0.7)
-# f_filter_similarity_high <- function(df) {
-#
-#
-#   filtered_month <- df %>%
-#     filter(DSM2 < 0.25)
-#
-#   return(filtered_month)
-# }
-#
-# f_filter_similarity_med <- function(df) {
-#
-#
-#   filtered_month <- df %>%
-#     filter(DSM2 >= 0.25 & DSM2<=0.75)
-#
-#   return(filtered_month)
-# }
-
 # Analysis ------------------------------
 
-## Create data frames --------------------
+## Create data frames for each inflow-OMR group --------------------
 
 ### A --------------
 A_2000_sp <- create_df(groupname = "A", flow = -2000)
@@ -194,10 +178,11 @@ E_2000_sp <- create_df(groupname = "E", flow = -2000)
 E_3500_sp <- create_df(groupname = "E", flow = -3500)
 E_5000_sp <- create_df(groupname = "E", flow = -5000)
 
-# Check spatial distribution-------------------------------------------------
+## Check spatial distribution-------------------------------------------------
 
-# Create interpolations
+# Create interpolations (takes a little bit)
 
+# Turn delta shapefile into spatial polygon object
 delta_sp <- as(delta_4326, "Spatial")
 
 ### A --------------
@@ -227,6 +212,9 @@ r.E3 <- interp_nodes(E_5000_sp)
 
 ## Create contours --------------------------
 
+# 0.25 represents contour at which 25% overlap exists (less similar)
+# 0.75 represents contour at which 75% overlap exists (more similar)
+
 ### A ----------------------
 c.A1_25 <- rasterToContour(r.A1, levels = 0.25)
 plot(c.A1_25)
@@ -241,6 +229,9 @@ c.A3_75 <- rasterToContour(r.A3, levels = 0.75)
 contours_m <- c(c.A1_75, c.A1_25, c.A2_75, c.A2_25,
                 c.A3_75, c.A3_25)
 
+# combines contours for one inflow group into one place
+# arranges contours in the correct order and groups by contour level
+# add OMR names back in
 contours_A <- lapply(contours_m, fortify) %>%
   bind_rows(.id = "id") %>%
   mutate(group2 = "A") %>%
@@ -343,10 +334,9 @@ contours_E <- lapply(contours_m, fortify) %>%
 contours_all <- rbind(contours_A, contours_B, contours_C, contours_D, contours_E) %>%
   mutate(OMR_flow = factor(flow, levels = c("-2000", "-3500", "-5000")))
 
-# Make map -----------------------
+# Make maps -----------------------
 
 # https://stackoverflow.com/questions/34153462/plot-spatiallinesdataframe-with-ggplot2
-
 # Define color palette
 cpal <- RColorBrewer::brewer.pal(6, "YlOrBr")[2:6]
 library(randomcoloR)
@@ -366,8 +356,9 @@ palette <- distinctColorPalette(n)
 (map_D_25 <- make_map(grp = "D", clevel =  0.25))
 (map_E_25 <- make_map(grp = "E", clevel =  0.25))
 
+## 0.75 ---------------
 
-# Make map for all of them
+# Make one file with all inflow groups
 contourGroup <- contours_all %>%
   filter(contour == 0.75) %>%
   mutate(grouper = paste0(group, "_", flow, group2),
@@ -377,7 +368,7 @@ contourGroup <- contours_all %>%
                             group2 == "C" ~ "high SJR median SAC",
                             group2 == "D" ~ "median SJR low SAC",
                             group2 == "E" ~ "median SJR high SAC"))
-# Map not including basemap
+### Map of all --------
 (map_75 <- ggplot() +
     # geom_sf(data = delta_4326, fill = NA, inherit.aes = FALSE, linetype = "dashed") +
     geom_sf(data = WW_Delta_crop, fill = "gray90", color = "gray70", alpha = 0.7, inherit.aes = FALSE) +
@@ -390,7 +381,7 @@ contourGroup <- contours_all %>%
     labs(title = "0.75 Contours")+
     theme_classic())
 
-# Faceted
+### Faceted maps ---------
 (map_75_f <- ggplot() +
     # geom_sf(data = delta_4326, fill = NA, inherit.aes = FALSE, linetype = "dashed") +
     geom_sf(data = WW_Delta_crop, fill = "gray90", color = "gray70", alpha = 0.7, inherit.aes = FALSE) +
@@ -408,6 +399,7 @@ contourGroup <- contours_all %>%
     theme_classic() +
     theme(axis.text = element_blank()))
 
+### Individual facets ------------
 (map_75_fA <- ggplot() +
     geom_sf(data = WW_Delta_crop, fill = "gray90", color = "gray70", alpha = 0.7, inherit.aes = FALSE) +
     geom_path(data = contourGroup %>% filter(group2=="A"), aes(x = long, y = lat, group  = grouper, color= label, linetype = OMR_flow), linewidth = 0.5, inherit.aes = FALSE) +
@@ -475,7 +467,7 @@ contourGroup <- contours_all %>%
 
 
 
-
+## 0.25 ---------
 
 contourGroup2 <- contours_all %>%
   filter(contour == 0.25) %>%
@@ -486,7 +478,7 @@ contourGroup2 <- contours_all %>%
                             group2 == "C" ~ "high SJR median SAC",
                             group2 == "D" ~ "median SJR low SAC",
                             group2 == "E" ~ "median SJR high SAC"))
-# Map not including basemap
+### Map of all ----------
 (map_25 <- ggplot() +
     # geom_sf(data = delta_4326, fill = NA, inherit.aes = FALSE, linetype = "dashed") +
     geom_sf(data = WW_Delta_crop, fill = "gray90", color = "gray70", alpha = 0.7, inherit.aes = FALSE) +
@@ -499,7 +491,7 @@ contourGroup2 <- contours_all %>%
     labs(title = "0.25 Contours")+
     theme_classic())
 
-
+### Faceted map -----------
 (map_25_f <- ggplot() +
     geom_sf(data = WW_Delta_crop, fill = "gray90", color = "gray70", alpha = 0.7, inherit.aes = FALSE) +
     geom_path(data = contourGroup2, aes(x = long, y = lat, group  = grouper, color= label, linetype = OMR_flow), linewidth = 0.5, inherit.aes = FALSE) +
@@ -511,6 +503,7 @@ contourGroup2 <- contours_all %>%
     theme_classic()+
     theme(axis.text = element_blank()))
 
+### Individual facets by inflow group --------------
 (map_25_fA <- ggplot() +
     geom_sf(data = WW_Delta_crop, fill = "gray90", color = "gray70", alpha = 0.7, inherit.aes = FALSE) +
     geom_path(data = contourGroup2 %>% filter(group2=="A"), aes(x = long, y = lat, group  = grouper, color= label, linetype = OMR_flow), linewidth = 0.5, inherit.aes = FALSE) +
@@ -622,109 +615,3 @@ ggsave("figures/Contours_25_allgroups_facetD.png", width = 9, height = 6, device
 
 map_25_fE
 ggsave("figures/Contours_25_allgroups_facetE.png", width = 9, height = 6, device = 'png', dpi = 300)
-
-
-
-
-
-
-
-
-
-
-
-
-
-# Filter to proportion of similarity ----------------------------------
-
-## List all the files --------------------------
-df <- list(A_2000_sp, A_3500_sp, A_5000_sp,
-           B_2000_sp, B_3500_sp, B_5000_sp,
-           C_2000_sp, C_3500_sp, C_5000_sp,
-           D_2000_sp, D_3500_sp, D_5000_sp,
-           E_2000_sp, E_3500_sp, E_5000_sp)
-
-## Loop it ---------------------------------------
-
-### This one should be filtering correctly
-filtered_high <- lapply(df, f_filter_similarity_high) %>%
-  bind_rows()
-
-# Calculate total length -------------------------
-filtered_high2 <- filtered_high %>%
-  group_by(group, OMR_Flow) %>%
-  summarize(sumLength = sum(length_feet))%>%
-  ungroup() %>%
-  mutate(Group = factor(group, levels = c("A", "B", "C", "D", "E")))
-
-
-
-
-
-
-
-
-
-
-
-
-
-# Visualize -------------------------------------
-
-## Check map (needs work) -----------------------------------
-
-map_omr_vals <- ggplot() +
-  geom_sf(data = delta_4326, aes(linetype = line), fill = NA, inherit.aes = FALSE)+
-  geom_sf(data = filtered2, aes(color = Flow, shape = Flow), alpha = 0.3, inherit.aes = FALSE) +
-  facet_wrap(~Month) +
-  labs(title = "Nodes with <0.7 similarity under different OMR Levels", color = "OMR",
-       shape = "OMR") +
-  theme_bw() +
-  theme(axis.text.x = element_text(angle = 90))
-
-png(filename = here::here("figures", "plot_map_omr_vals.png"),
-    width = 6, height = 6, units = "in",
-    pointsize = 12, family = "sans", res = 300)
-map_omr_vals
-dev.off()
-
-## Visualize differences -------------------
-barplot_omr <- ggplot(filtered2) +
-  geom_col(aes(Month, sumLength, fill = Flow), position = "dodge2")  +
-  labs(y = "Sum Channel Length") +
-  viridis::scale_fill_viridis(discrete = TRUE) +
-  theme_bw()
-
-# png(filename = here::here("figures", "plot_barplot_omr_channellength.png"),
-#     width = 6, height = 6, units = "in",
-#     pointsize = 12, family = "sans", res = 300)
-# barplot_omr
-# dev.off()
-
-
-### Look at February
-feb <- filtered_try2%>%
-  filter(Month == "Feb")
-
-feb_wide <- feb %>%
-  select(-upnode, -channel_number) %>%
-  pivot_wider( values_from= c("length_feet","DSM2"), names_from = "Flow")
-
-feb235 <- feb_2000_sp %>%
-  st_drop_geometry() %>%
-  select(-points, -channel_number, -Flow) %>%
-  rename(DSM2_2000 =DSM2) %>%
-  full_join(feb_3500_sp %>% st_drop_geometry(), by = c("upnode", "downnode", "Month", "node")) %>%
-  select(-points, -channel_number, -Flow) %>%
-  rename(DSM2_3500 = DSM2) %>%
-  full_join(feb_5000_sp %>% st_drop_geometry(), by = c("upnode", "downnode", "Month", "node")) %>%
-  st_drop_geometry() %>%
-  rename(DSM2_5000 = DSM2) %>%
-  select(-points, -channel_number, -Flow) %>%
-  mutate(diff = ifelse(DSM2_3500 <0.7 & DSM2_5000 >=0.7, "diff", "0")) %>%
-  #mutate(diff = ifelse(DSM2_3500 < DSM2_5000, "diff", "0")) %>%
-  mutate(DSM2_3500 = round(DSM2_3500, 3),
-         DSM2_5000 = round(DSM2_5000, 3)) %>%
-  select(node, upnode, downnode, length_2000 = length_feet.y, length_3500 = length_feet.x,
-         length_5000 = length_feet, DSM2_2000, DSM2_3500, DSM2_5000, diff)
-
