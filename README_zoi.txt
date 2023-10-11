@@ -26,4 +26,18 @@ Files not directly used in LTO:
 2. See how months correspond to inflow groups: 
 	make_month_subsetgroup_plots.R
 3. Calculate frequency in OMR and inflow bins for each alternative:
-	Calculate the calculate_frequency_bins_alts.R
+	calculate_frequency_bins_alts.R
+
+Data exports (data_export/):
+
+1. Sample sizes for BA frequency analysis:
+	bin_samplesizes_acrossalts_v2.csv
+	bin_prop_samplesizes_acrossalts_v2.csv
+2. Sample sizes for ZOI analysis: 
+	bin_samplesizes_acrossalts.csv
+	bin_prop_samplesizes_acrossalts.csv
+2. Flow bins: 
+	flow_subset_table_sumstats.csv (details the flow ranges under NAA)
+	flow_omr_subsets_month_year_dectojun.csv (flow/omr sample sizes NAA; filters to months of interest)
+	flow_omr_subsets_month_year_clean.csv (flow/omr sample sizes NAA; does not filter to month)
+	
