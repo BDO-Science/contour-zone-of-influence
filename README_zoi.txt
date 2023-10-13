@@ -31,11 +31,11 @@ Files not directly used in LTO:
 Data exports (data_export/):
 
 1. Sample sizes for BA frequency analysis:
-	bin_samplesizes_acrossalts_v2.csv
-	bin_prop_samplesizes_acrossalts_v2.csv
+	bin_samplesizes_acrossalts_freq.csv
+	bin_prop_samplesizes_acrossalts_freq.csv
 2. Sample sizes for ZOI analysis: 
-	bin_samplesizes_acrossalts.csv
-	bin_prop_samplesizes_acrossalts.csv
+	bin_samplesizes_acrossalts_zoi.csv
+	bin_prop_samplesizes_acrossalts_zoi.csv
 2. Flow bins: 
 	flow_subset_table_sumstats.csv (details the flow ranges under NAA)
 	flow_omr_subsets_month_year_dectojun.csv (flow/omr sample sizes NAA; filters to months of interest)
