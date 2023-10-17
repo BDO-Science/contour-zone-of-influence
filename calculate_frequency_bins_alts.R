@@ -26,7 +26,7 @@ col_order = c("Flow", "OMR", "OMR_range",  "EXP1", "EXP3", "NAA",
               "ALT2v1", "ALT2v2", "ALT2v3", "ALT2v4",
               "ALT3", "ALT4")
 inflow_order = c("lolo", "lomed", "lohi", "medlo", "medmed", "medhi", "hilo", "himed", "hihi", "NA")
-omr_order = c("greater than -1000", "-2000", "-3500", "-5000", "less than -5500")
+omr_order = c("< -3500", ">= -3500")
 
 # read in data
 bins <- read_excel("data_raw/calsim/Reclamation_2021LTO_SacR_SJR_OMR_Binning_rev01_20230929_result.xlsx", skip = 5)
@@ -169,7 +169,7 @@ write_csv(bins_months_prop_table, "data_export/bin_prop_samplesizes_acrossalts_z
 # BA ------------------------
 ## reformat ----------------------
 omr_bins <- read_excel("data_raw/calsim/Reclamation_2021LTO_OMR_rev01_20231010.xlsx", skip = 11)
-bins2_flow <- select(bins2, contains("Flow"))
+bins2_flow <- dplyr::select(bins2, contains("Flow"))
 bins_upd <- cbind(omr_bins, bins2_flow)
 
 colnames(bins_upd) <- c("Date", "OMR_EXP1",  "OMR_EXP3","OMR_NAA",
@@ -197,11 +197,8 @@ bins_months <- bins_long %>% filter(Month %in% c(12, 1, 2, 3, 4, 5, 6))
 
 ### regroup OMR (freq analysis only) ---------
 bins_freq <- bins_months %>%
-  mutate(OMR_group = case_when(OMR > -1000 ~ "greater than -1000",
-                               OMR > -2500 & OMR <=-1000 ~ "-2000",
-                               OMR > -4000 & OMR <=-2500 ~ "-3500",
-                               OMR > -5500 & OMR <=-4000 ~ "-5000",
-                               OMR <=-5500 ~ "less than -5500",
+  mutate(OMR_group = case_when(OMR >= -3500 ~ ">= -3500",
+                               OMR < -3500 ~ "< -3500",
                                TRUE ~ "Other")) %>%
   rename(OMR_val = OMR,
          OMR = OMR_group)
@@ -229,11 +226,8 @@ bins_months_table <- bins_summary_complete %>%
   pivot_wider(names_from = "Alt", values_from = "n", values_fill = list(n = 0)) %>%
   arrange(Flow, OMR)%>%
   mutate(Flow = factor(Flow, levels = inflow_order),
-         OMR_range = case_when(OMR == "greater than -1000" ~ "greater than -1000",
-                               OMR == "-2000" ~ "-2500 to -1000",
-                               OMR == "-3500" ~ "-4000 to -2500",
-                               OMR == "-5000" ~ "-5500 to -4000",
-                               OMR == "less than -5500" ~ "less than -5500"))
+         OMR_range = case_when(OMR == "< -3500" ~ "less than -3500",
+                               OMR == ">= -3500" ~ "greater than or equal to -3500"))
 bins_months_table <- bins_months_table[, col_order]
 
 # calculate proportion in each group by alt
@@ -303,6 +297,4 @@ dev.off()
 write_csv(bins_months_table, "data_export/bin_samplesizes_acrossalts_freq.csv")
 write_csv(bins_months_prop_table, "data_export/bin_prop_samplesizes_acrossalts_freq.csv")
 
-
-# There are different calculations for analyses vs BA frequency analysis
 
