@@ -1,6 +1,8 @@
 ##############################################
-# Last updated 10/6/2023 by Catarina Pien (USBR)
+# Last updated 10/17/2023 by Catarina Pien (USBR)
 # Calculate sample sizes for each alt in flow and OMR bins
+# There is a version for the BA (Frequency) that needs to be edited
+# and a version for ZOI which also applies to other analyses
 #################################################
 
 library(ggplot2)
@@ -49,6 +51,11 @@ colnames(bins_upd) <- c("Date", "OMR_EXP1",  "OMR_EXP3","OMR_NAA",
                     "Flow_ALT2v1", "Flow_ALT2v2", "Flow_ALT2v3", "Flow_ALT2v4",
                     "Flow_ALT3", "Flow_ALT4" )
 
+
+
+# There is a BA and ZOI section. Go to # ZOI section for the analysis bins.
+# BA bins include grouping all the "NA" values into separate bins.
+
 # BA ------------------------
 ## reformat ----------------------
 ###  make long ---------
@@ -79,8 +86,6 @@ bins_freq <- bins_months %>%
          OMR = OMR_group)
 
 ### calculate sample sizes -----------------
-
-# filter to months of interest (12-6)
 bins_summary_months <- bins_freq %>%
   group_by(Flow, OMR, Alt) %>%
   summarize(n = n()) %>%
@@ -179,6 +184,7 @@ write_csv(bins_months_prop_table, "data_export/bin_prop_samplesizes_acrossalts_f
 
 
 # There are different calculations for analyses vs BA frequency analysis
+# Start here for ZOI analysis
 
 # ZOI -------------------------------
 ## reformat ----------------------
