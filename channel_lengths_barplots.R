@@ -20,14 +20,13 @@ library(ggpattern)
 
 
 # Read/Join data ---------------------------------------------------------
-zoi_file_NAA = list.files("data_raw", pattern = "NAA_.*csv$", full.names = TRUE)
-#zoi_file_D1641
+zoi_file_NAA = list.files("data_raw/zoi/", pattern = "NAA_.*csv$", full.names = TRUE)
 zoi_data <- lapply(zoi_file_NAA, read_csv) %>%
   bind_rows(.id = "id") %>%
-  mutate(id = paste0("-", substr(zoi_file_NAA[as.numeric(id)], 36, 39))) %>%
-  rename(OMR_Flow = id)
-
-channels <- read_csv("data_updatedDSM2/Reclamation_2021LTO_DSM2_Version806_ChannelLengths.csv") %>%
+  mutate(id = paste0("-", substr(zoi_file_NAA[as.numeric(id)],25, 28))) %>%
+  rename(OMR_Flow = id) %>%
+  mutate(OMR_Flow = if_else(OMR_Flow == "-sTha", "<-5500", OMR_Flow))
+channels <- read_csv("data_raw/Reclamation_2021LTO_DSM2_Version806_ChannelLengths.csv") %>%
   janitor::clean_names()  %>%
   rename(channel_number = chan_no)
 
@@ -48,7 +47,7 @@ zoi_channel <- merge(zoi_data, channels, by = "channel_number")
 
 
 zoi_channel_group <- zoi_channel %>%
-  pivot_longer(cols = c(A, B, C, D, E),
+  pivot_longer(cols = c(lolo, lomed, lohi, medlo, medmed, medhi, hilo, himed, hihi),
               names_to = "Group",
                values_to = "p_overlap") %>%
   filter(p_overlap>=0)
@@ -68,7 +67,7 @@ filtered2_high <- filtered_dat_high %>%
   group_by(Group, OMR_Flow) %>%
   summarize(sumLength = sum(length_feet))%>%
   ungroup() %>%
-  mutate(Group = factor(Group, levels = c("A", "B", "C", "D", "E")))%>%
+  mutate(Group = factor(Group, levels = c("lolo", "lomed", "lohi", "medlo", "medmed", "medhi", "hilo", "himed", "hihi")))%>%
   mutate(pLength = sumLength/total_channel_length) %>%
   mutate(h_influence = "High hydrologic influence")
 
@@ -76,7 +75,7 @@ filtered2_med <- filtered_dat_med %>%
   group_by(Group, OMR_Flow) %>%
   summarize(sumLength = sum(length_feet))%>%
   ungroup() %>%
-  mutate(Group = factor(Group, levels = c("A", "B", "C", "D", "E"))) %>%
+  mutate(Group = factor(Group, levels = c("lolo", "lomed", "lohi", "medlo", "medmed", "medhi", "hilo", "himed", "hihi"))) %>%
   mutate(pLength = sumLength/total_channel_length) %>%
   mutate(h_influence = "Medium hydrologic influence")
 
@@ -84,7 +83,7 @@ filtered2_low <- filtered_dat_low %>%
   group_by(Group, OMR_Flow) %>%
   summarize(sumLength = sum(length_feet))%>%
   ungroup() %>%
-  mutate(Group = factor(Group, levels = c("A", "B", "C", "D", "E"))) %>%
+  mutate(Group = factor(Group, levels = c("lolo", "lomed", "lohi", "medlo", "medmed", "medhi", "hilo", "himed", "hihi"))) %>%
   mutate(pLength = sumLength/total_channel_length) %>%
   mutate(h_influence = "Low hydrologic influence")
 
@@ -109,29 +108,29 @@ barplot_omr
   theme_bw())
 
 (stacked_barplot <- ggplot(filtered_dat, aes(x = OMR_Flow, y = pLength, fill = OMR_Flow, pattern = h_influence)) +
-    geom_col_pattern(color = "gray50",
+    geom_col_pattern(color = "gray20",
                      pattern_color = "gray80",
-                     pattern_fill = "gray80",
-                     pattern_spacing = 0.06,
+                     pattern_fill = "gray70",
+                     pattern_spacing = 0.05,
                      pattern_size = 0.4,
-                     alpha = 0.8)  +
+                     alpha = 0.9)  +
     labs(y = "Proportional Channel Length") +
     scale_pattern_manual(values = c("circle", "none", "stripe")) +
     facet_wrap(~Group) +
     viridis::scale_fill_viridis(discrete = TRUE) +
     # guides(pattern_fill = "none",
     #        pattern = "none") +
-    theme_bw() +
+    theme_classic() +
     theme(legend.position = "top",
           legend.box = "vertical"))
 
-png("figures/proportional_channel_length_dropnodes.png", width = 7, height = 9, units = "in", res = 300, pointsize = 9)
+png("figures/proportional_channel_length_dropnodes_new.png", width = 7, height = 9, units = "in", res = 300, pointsize = 9)
 barplot_omr
 dev.off()
 
-png("figures/attachment_plots/stacked_barplot_channellengths.png", width = 7, height = 8, units = "in", res = 300, pointsize = 9)
 stacked_barplot
-dev.off()
+ggsave("figures/attachment_plots/stacked_barplot_channellengths_new.png", width = 7.2, height = 8, units = "in", dpi = 300)
+
 
 ## Look at map --------------------------
 # Visualization

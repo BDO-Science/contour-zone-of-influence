@@ -1,5 +1,7 @@
 # contour_maps_inflow.R ######
-#### Catarina Pien and Lisa Elliott
+# Updated: 10/17/2023
+# Catarina Pien and Lisa Elliott (USBR)
+# cpien@usbr.gov; lelliott@usbr.gov
 
 #  This code uses zone of influence modeling results (DSM2) to create contours showing
 #  how zone of influence changes from operational facilities based on pumping
@@ -150,7 +152,7 @@ interp_nodes <- function(df, mask=delta_sp) {
 # # produces data frame of contour lines
 create_contour <- function(inflow_list, inflow_group) {
   c1 <- mapply(rasterToContour, inflow_list, levels = 0.75)
-  c2 <- mapply(rasterToContour, inflow_list, levels = 0.95)
+  c2 <- mapply(rasterToContour, inflow_list, levels = 0.25)
   cont <- rbind(c1, c2)
   contours_lolo <- lapply(cont, fortify) %>%
     bind_rows(.id = "id") %>%
@@ -160,7 +162,7 @@ create_contour <- function(inflow_list, inflow_group) {
                             id %in% c(5,6) ~ "-5000",
                             id %in% c(7,8) ~ "<-5500"),
            contour = case_when(id %in% c(1,3, 5, 7) ~ 0.75,
-                               id %in% c(2,4,6, 8) ~ 0.95))
+                               id %in% c(2,4,6, 8) ~ 0.25))
 }
 
 # Map making function
@@ -203,13 +205,13 @@ lolo_5500_sp <- create_df(groupname = "lolo", flow = "<-5500")
 lomed_2000_sp <- create_df(groupname = "lomed", flow = "-2000")
 lomed_3500_sp <- create_df(groupname = "lomed", flow = "-3500")
 lomed_5000_sp <- create_df(groupname = "lomed", flow = "-5000")
-lomed_5500_sp <- create_df(groupname = "lomed", flow = "<-5500") # error
+# lomed_5500_sp <- create_df(groupname = "lomed", flow = "<-5500") # error
 
 ### lohi --------------
 lohi_2000_sp <- create_df(groupname = "lohi", flow = "-2000")
 lohi_3500_sp <- create_df(groupname = "lohi", flow = "-3500")
 lohi_5000_sp <- create_df(groupname = "lohi", flow = "-5000")
-lohi_5500_sp <- create_df(groupname = "lohi", flow = "<-5500") # error
+# lohi_5500_sp <- create_df(groupname = "lohi", flow = "<-5500") # error
 
 ### medlo --------------
 medlo_2000_sp <- create_df(groupname = "medlo", flow = "-2000")
@@ -230,7 +232,7 @@ medhi_5000_sp <- create_df(groupname = "medhi", flow = "-5000")
 medhi_5500_sp <- create_df(groupname = "medhi", flow = "<-5500")
 
 ### hilo --------------
-hilo_2000_sp <- create_df(groupname = "hilo", flow = "-2000") # error
+# hilo_2000_sp <- create_df(groupname = "hilo", flow = "-2000") # error
 hilo_3500_sp <- create_df(groupname = "hilo", flow = "-3500")
 hilo_5000_sp <- create_df(groupname = "hilo", flow = "-5000")
 hilo_5500_sp <- create_df(groupname = "hilo", flow = "<-5500")
@@ -260,12 +262,12 @@ r.lolo4 <- interp_nodes(lolo_5500_sp)
 r.lomed1 <- interp_nodes(lomed_2000_sp)
 r.lomed2 <- interp_nodes(lomed_3500_sp)
 r.lomed3 <- interp_nodes(lomed_5000_sp)
-r.lomed4 <- interp_nodes(lomed_5500_sp) # does not exist
+# r.lomed4 <- interp_nodes(lomed_5500_sp) # does not exist
 
 r.lohi1 <- interp_nodes(lohi_2000_sp)
 r.lohi2 <- interp_nodes(lohi_3500_sp)
 r.lohi3 <- interp_nodes(lohi_5000_sp)
-r.lohi4 <- interp_nodes(lohi_5500_sp) # does not exist
+# r.lohi4 <- interp_nodes(lohi_5500_sp) # does not exist
 
 r.medlo1 <- interp_nodes(medlo_2000_sp)
 r.medlo2 <- interp_nodes(medlo_3500_sp)
@@ -282,7 +284,7 @@ r.medhi2 <- interp_nodes(medhi_3500_sp)
 r.medhi3 <- interp_nodes(medhi_5000_sp)
 r.medhi4 <- interp_nodes(medhi_5500_sp)
 
-r.hilo1 <- interp_nodes(hilo_2000_sp) # does not exist
+# r.hilo1 <- interp_nodes(hilo_2000_sp) # does not exist
 r.hilo2 <- interp_nodes(hilo_3500_sp)
 r.hilo3 <- interp_nodes(hilo_5000_sp)
 r.hilo4 <- interp_nodes(hilo_5500_sp)
@@ -345,22 +347,22 @@ n <- 15
 palette <- distinctColorPalette(n)
 
 # Run make_map function to make maps (see documentation above)
-(map_A_75 <- make_map(grp = "lolo", clevel = 0.75))
-(map_B_75 <- make_map(grp = "lomed", clevel = 0.75))
-(map_C_75 <- make_map(grp = "lohi", clevel = 0.75))
-(map_D_75 <- make_map(grp = "medlo", clevel = 0.75))
-(map_E_75 <- make_map(grp = "medmed", clevel = 0.75))
-(map_E_75 <- make_map(grp = "medmed", clevel = 0.75))
-(map_E_75 <- make_map(grp = "medmed", clevel = 0.75))
-(map_E_75 <- make_map(grp = "medmed", clevel = 0.75))
-(map_E_75 <- make_map(grp = "medmed", clevel = 0.75))
-(map_E_75 <- make_map(grp = "medmed", clevel = 0.75))
+# (map_A_75 <- make_map(grp = "lolo", clevel = 0.75))
+# (map_B_75 <- make_map(grp = "lomed", clevel = 0.75))
+# (map_C_75 <- make_map(grp = "lohi", clevel = 0.75))
+# (map_D_75 <- make_map(grp = "medlo", clevel = 0.75))
+# (map_E_75 <- make_map(grp = "medmed", clevel = 0.75))
+# (map_E_75 <- make_map(grp = "medmed", clevel = 0.75))
+# (map_E_75 <- make_map(grp = "medmed", clevel = 0.75))
+# (map_E_75 <- make_map(grp = "medmed", clevel = 0.75))
+# (map_E_75 <- make_map(grp = "medmed", clevel = 0.75))
+# (map_E_75 <- make_map(grp = "medmed", clevel = 0.75))
 
-(map_A_25 <- make_map(grp = "A", clevel =  0.25))
-(map_B_25 <- make_map(grp = "B", clevel =  0.25))
-(map_C_25 <- make_map(grp = "C", clevel =  0.25))
-(map_D_25 <- make_map(grp = "D", clevel =  0.25))
-(map_E_25 <- make_map(grp = "E", clevel =  0.25))
+# (map_A_25 <- make_map(grp = "A", clevel =  0.25))
+# (map_B_25 <- make_map(grp = "B", clevel =  0.25))
+# (map_C_25 <- make_map(grp = "C", clevel =  0.25))
+# (map_D_25 <- make_map(grp = "D", clevel =  0.25))
+# (map_E_25 <- make_map(grp = "E", clevel =  0.25))
 
 ## 0.75 ---------------
 inflow_order = c("lolo", "lomed", "lohi", "medlo", "medmed", "medhi", "hilo", "himed", "hihi")
@@ -374,7 +376,7 @@ contourGroup <- contours_all %>%
   mutate(Inflow = factor(Inflow, levels = inflow_order))
 
 ### Map of all --------
-(map_95 <- ggplot() +
+(map_25 <- ggplot() +
     # geom_sf(data = delta_4326, fill = NA, inherit.aes = FALSE, linetype = "dashed") +
     geom_sf(data = WW_Delta_crop, fill = "gray90", color = "gray70", alpha = 0.7, inherit.aes = FALSE) +
     geom_path(data = contourGroup, aes(x = long, y = lat, group  = grouper, color= label, linetype = OMR_flow), linewidth = 0.5, inherit.aes = FALSE) +
@@ -383,11 +385,13 @@ contourGroup <- contours_all %>%
                            style = north_arrow_fancy_orienteering) +
     annotation_scale(location = "bl", bar_cols = c("black", "white", "black", "white")) +
     scale_color_manual("OMR Flow (cfs)", values = viridis::viridis(33)) +
-    labs(title = "0.95 Contours")+
+    ylim(c(37.7, 38.1)) +
+    xlim(c(-121.8, -121.2)) +
+    labs(title = "0.25 Contours")+
     theme_classic())
 
 ### Faceted maps ---------
-(map_95_f <- ggplot() +
+(map_25_f <- ggplot() +
     # geom_sf(data = delta_4326, fill = NA, inherit.aes = FALSE, linetype = "dashed") +
     geom_sf(data = WW_Delta_crop, fill = "gray90", color = "gray70", alpha = 0.7, inherit.aes = FALSE) +
     # geom_sf(data = nodes_4326, size = 0.4, color = "gray30", inherit.aes = FALSE) +
@@ -397,15 +401,15 @@ contourGroup <- contours_all %>%
     #                        style = north_arrow_fancy_orienteering) +
     # annotation_scale(location = "bl", bar_cols = c("black", "white", "black", "white")) +
     facet_wrap(~Inflow) +
-    ylim(c(37.6, 38.3)) +
-    xlim(c(-122.2, -121.2)) +
+    ylim(c(37.7, 38.1)) +
+    xlim(c(-121.8, -121.2)) +
     scale_color_viridis_d() +
     labs(title = "0.25 Contours")+
     theme_classic() +
     theme(axis.text = element_blank()))
 
 ### Individual facets ------------
-(map_95_flolo <- ggplot() +
+(map_25_flolo <- ggplot() +
     geom_sf(data = WW_Delta_crop, fill = "gray90", color = "gray70", alpha = 0.7, inherit.aes = FALSE) +
     geom_path(data = contourGroup %>% filter(Inflow=="lolo"), aes(x = long, y = lat, group  = grouper, color= OMR_flow, linetype = OMR_flow), linewidth = 0.5, inherit.aes = FALSE) +
     annotation_north_arrow(location = "tr", which_north = "true",
@@ -415,7 +419,7 @@ contourGroup <- contours_all %>%
     ylim(c(37.6, 38.3)) +
     xlim(c(-122.2, -121.2)) +
     scale_color_viridis_d("OMR Flow (cfs)") +
-    labs(title = paste0("0.95 Contour\n", contourGroup$Inflow))+
+    labs(title = paste0("0.25 Contour\n", contourGroup$Inflow))+
     theme_classic())
 
 ## 0.75 ---------
@@ -436,9 +440,14 @@ contourGroup2 <- contours_all %>%
                            pad_x = unit(.1, "in"), pad_y = unit(0.2, "in"),
                            style = north_arrow_fancy_orienteering) +
     annotation_scale(location = "bl", bar_cols = c("black", "white", "black", "white")) +
-    scale_color_manual("OMR Flow (cfs)", values = viridis::viridis(33)) +
+   ylim(c(37.7, 38.1)) +
+   xlim(c(-121.8, -121.2)) +
+    scale_color_viridis_d("OMR Flow (cfs)") +
+   scale_linetype_discrete("OMR Flow (cfs)") +
     labs(title = "0.75 Contours")+
-    theme_classic())
+    theme_classic() +
+   theme(axis.text.x = element_text(angle = 45, hjust = 0.5, vjust = 0.5),
+         axis.title = element_blank()))
 
 ### Faceted map -----------
 (map_75_f <- ggplot() +
@@ -448,32 +457,45 @@ contourGroup2 <- contours_all %>%
     ylim(c(37.7, 38.1)) +
     xlim(c(-121.8, -121.2)) +
     scale_color_viridis_d("OMR Flow (cfs)") +
+    scale_linetype_discrete("OMR Flow (cfs)") +
     labs(title = "0.75 Contours")+
-    theme_classic()+
-    theme(axis.text = element_blank()))
+    theme_classic() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 0.5, vjust = 0.5),
+          axis.title = element_blank(),
+          legend.position = "top"))
 
 ### Individual facets by inflow group --------------
 (map_75_flolo <- ggplot() +
     geom_sf(data = WW_Delta_crop, fill = "gray90", color = "gray70", alpha = 0.7, inherit.aes = FALSE) +
-    geom_path(data = contourGroup2 %>% filter(Inflow=="lolo"), aes(x = long, y = lat, group  = grouper, color= label, linetype = OMR_flow), linewidth = 0.5, inherit.aes = FALSE) +
+    geom_path(data = contourGroup2 %>% filter(Inflow=="lolo"), aes(x = long, y = lat, group  = grouper, color= OMR_flow, linetype = OMR_flow), linewidth = 0.5, inherit.aes = FALSE) +
     annotation_north_arrow(location = "tr", which_north = "true",
                            pad_x = unit(.1, "in"), pad_y = unit(0.2, "in"),
                            style = north_arrow_fancy_orienteering) +
     annotation_scale(location = "bl", bar_cols = c("black", "white", "black", "white")) +
     ylim(c(37.7, 38.1)) +
     xlim(c(-121.8, -121.2)) +
-    scale_color_manual("OMR Flow (cfs)", values = viridis::viridis(15)[1:3]) +
+    scale_color_viridis_d("OMR Flow (cfs)") +
+   scale_linetype_discrete("OMR Flow (cfs)") +
     labs(title = paste0("0.75 Contour\n", contourGroup2$Inflow))+
-    theme_classic())
+    theme_classic()+
+   theme(axis.text = element_text(size = 11),
+         legend.text = element_text(size = 11),
+         legend.title = element_text(size = 12),
+         axis.text.x = element_text(angle = 45, hjust = 0.5, vjust = 0.5),
+         axis.title = element_blank(),
+         legend.position = "top",
+         legend.box = "vertical"))
 
 
 # Export Maps ---------------------
-map_95_f
-ggsave("figures/Contours_95_allgroups_facet_new.png", width = 9, height = 7, device = 'png', dpi = 300)
+map_75
+ggsave("figures/Contours_75_allgroups_new.png", width = 7, height = 7.5, device = 'png', dpi = 300)
 
 map_75_f
-ggsave("figures/Contours_75_allgroups_facet_new.png", width = 9, height = 7, device = 'png', dpi = 300)
+ggsave("figures/Contours_75_allgroups_facet_new.png", width = 7, height = 7.5, device = 'png', dpi = 300)
 
+map_75_flolo
+ggsave("figures/Contours_75_lolo_new.png", width = 8, height = 7, device = 'png', dpi = 300)
 
 
 
