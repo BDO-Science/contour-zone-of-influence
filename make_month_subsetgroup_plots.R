@@ -1,11 +1,72 @@
 library(ggplot2)
 library(dplyr)
+library(readr)
 
-############### Quantile Subset ##############
-flow_table <- read.csv("flow.subset.table.csv")
-flow.dat <- read.csv("data_inflow/Inflow.csv")
-flow.months <- flow.dat %>%
-  dplyr::filter(Month %in% c(12, 1, 2, 3, 4, 5, 6))
+# Read data --------------------------------------------
+flow_table <- read_csv("data_export/flow_omr_subsets_month_year_dectojun.csv")%>%
+  mutate(Month = factor(Month, levels = c("12", "1", "2", "3", "4", "5", "6")),
+         Sub.group = factor(Sub.group, levels = inflow_order))
+
+feb <- flow_table %>% filter(Month == "2")
+mar <- flow_table %>% filter(Month == "3")
+
+# Count data --------------------------------------------
+inflow_order = c("lolo", "lomed", "lohi", "medlo", "medmed", "medhi", "hilo", "himed", "hihi")
+flow_table_summary <- flow_table %>%
+  group_by(Sub.group, Month) %>%
+  summarize(n = n()) %>%
+  ungroup() %>%
+  mutate(Month = factor(Month, levels = c("12", "1", "2", "3", "4", "5", "6")),
+         Sub.group = factor(Sub.group, levels = inflow_order))
+
+flow_OMR_table_summary <- flow_table %>%
+  group_by(Sub.group, Month, OMR) %>%
+  summarize(n = n()) %>%
+  ungroup() %>%
+  mutate(Month = factor(Month, levels = c("12", "1", "2", "3", "4", "5", "6")),
+         Sub.group = factor(Sub.group, levels = inflow_order))
+
+# Plot data ------------------------------------------------
+# Make plots of month
+
+ggplot(flow_table_summary) + geom_tile(aes(x = Sub.group, y = Month, fill = n), color = "black") +
+  theme_classic()
+
+ggplot(feb) + geom_point(aes(x = Sac.cfs, y = OMR, color = OMR_group))
+ggplot(flow_table) + geom_point(aes(x = Sac.cfs, y = OMR, color = OMR_group), size = 3) + facet_wrap(~Month) +
+  scale_color_viridis_d()
+ggplot(flow_table %>% filter(SJR.cfs < 20000)) + geom_point(aes(x = SJR.cfs, y = OMR, color = OMR_group), size = 3) + facet_wrap(~Month) +
+  scale_color_viridis_d()
+
+
+ggplot(flow_table) +
+  geom_point(aes(x = Sac.cfs, y = SJR.cfs, color = OMR_group, shape =Sub.group), size = 3) +
+  facet_wrap(~Month) +
+  scale_shape_manual(values = c(1, 2, 3, 4, 5, 12, 13, 14, 15, 16)) +
+  scale_color_viridis_d() +
+  theme_bw()
+
+
+ggplot(flow_table) + geom_boxplot(aes(x = Month, y = Sac.cfs, fill = Month))
+ggplot(flow_table) + geom_boxplot(aes(x = Month, y = SJR.cfs, fill = Month))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# flow.dat <- read.csv("data_inflow/Inflow.csv")
+# flow.months <- flow.dat %>%
+  # dplyr::filter(Month %in% c(12, 1, 2, 3, 4, 5, 6))
 
 ###############
 
