@@ -1,5 +1,5 @@
 ##############################################
-# Last updated 10/17/2023 by Catarina Pien (USBR)
+# Last updated 10/19/2023 by Catarina Pien (USBR)
 # Calculate sample sizes for each alt in flow and OMR bins
 # There is a version for the BA (Frequency) that needs to be edited
 # and a version for ZOI which also applies to other analyses
@@ -19,14 +19,15 @@ library(tidyr)
 # order
 alt_order = c("EXP1", "EXP3", "NAA",
               "ALT1",
-              "ALT2v1", "ALT2v2", "ALT2v3", "ALT2v4",
+              "ALT2a", "ALT2b", "ALT2c", "ALT2d",
               "ALT3", "ALT4")
 col_order = c("Flow", "OMR", "OMR_range",  "EXP1", "EXP3", "NAA",
               "ALT1",
-              "ALT2v1", "ALT2v2", "ALT2v3", "ALT2v4",
+              "ALT2a", "ALT2b", "ALT2c", "ALT2d",
               "ALT3", "ALT4")
 inflow_order = c("lolo", "lomed", "lohi", "medlo", "medmed", "medhi", "hilo", "himed", "hihi", "NA")
 omr_order = c("< -3500", ">= -3500")
+safe_pal <- c('#003E51','#007396', '#C69214', '#DDCBA4','#FF671F', '#215732','#4C12A1','#9a3324', "#88CCEE","#AA4499")
 
 # read in data
 bins <- read_excel("data_raw/calsim/Reclamation_2021LTO_SacR_SJR_OMR_Binning_rev01_20230929_result.xlsx", skip = 5)
@@ -34,8 +35,8 @@ bins <- read_excel("data_raw/calsim/Reclamation_2021LTO_SacR_SJR_OMR_Binning_rev
 # rename column names
 colnames(bins) <- c("Date", "Flow_EXP1", "OMR_EXP1", "Flow_EXP3", "OMR_EXP3",
                     "Flow_NAA", "OMR_NAA", "Flow_ALT1", "OMR_ALT1",
-                    "Flow_ALT2v1", "OMR_ALT2v1", "Flow_ALT2v2", "OMR_ALT2v2",
-                    "Flow_ALT2v3", "OMR_ALT2v3", "Flow_ALT2v4", "OMR_ALT2v4",
+                    "Flow_ALT2a", "OMR_ALT2a", "Flow_ALT2b", "OMR_ALT2b",
+                    "Flow_ALT2c", "OMR_ALT2c", "Flow_ALT2d", "OMR_ALT2d",
                     "Flow_ALT3", "OMR_ALT3", "Flow_ALT4", "OMR_ALT4")
 bins2 <- bins[-1,]
 
@@ -173,10 +174,10 @@ bins2_flow <- dplyr::select(bins2, contains("Flow"))
 bins_upd <- cbind(omr_bins, bins2_flow)
 
 colnames(bins_upd) <- c("Date", "OMR_EXP1",  "OMR_EXP3","OMR_NAA",
-                     "OMR_ALT1","OMR_ALT2v1",
-                    "OMR_ALT2v2","OMR_ALT2v3", "OMR_ALT2v4","OMR_ALT3","OMR_ALT4",
+                     "OMR_ALT1","OMR_ALT2a",
+                    "OMR_ALT2b","OMR_ALT2c", "OMR_ALT2d","OMR_ALT3","OMR_ALT4",
                     "Flow_EXP1",  "Flow_EXP3", "Flow_NAA", "Flow_ALT1",
-                    "Flow_ALT2v1", "Flow_ALT2v2", "Flow_ALT2v3", "Flow_ALT2v4",
+                    "Flow_ALT2a", "Flow_ALT2b", "Flow_ALT2c", "Flow_ALT2d",
                     "Flow_ALT3", "Flow_ALT4" )
 
 ###  make long ---------
@@ -203,6 +204,16 @@ bins_freq <- bins_months %>%
   rename(OMR_val = OMR,
          OMR = OMR_group)
 
+# bins_freq <- bins_months %>%
+#   mutate(OMR_group = case_when(OMR > -1500 ~ "positive",
+#                                 OMR >= -2500 & OMR <=-1500 ~ "-2000",
+#                                 OMR >= -4000 & OMR <=-3000 ~ "-3500",
+#                                 OMR >= -5500 & OMR <=-4500 ~ "-5000",
+#                                 OMR <=-5500 ~ "less than -5500",
+#                                 TRUE ~ "Other")) %>%
+#   rename(OMR_val = OMR,
+#          OMR = OMR_group)
+
 ### calculate sample sizes -----------------
 bins_summary_months <- bins_freq %>%
   group_by(Flow, OMR, Alt) %>%
@@ -211,6 +222,7 @@ bins_summary_months <- bins_freq %>%
   mutate(Alt = factor(Alt, levels = alt_order ),
          Flow = factor(Flow, levels = inflow_order),
          OMR = factor(OMR, levels = omr_order)) %>%
+         # OMR = factor(OMR, levels = c("positive", "-2000", "-3500", "-5000", "less than -5500", "Other"))) %>%
   arrange(Flow, OMR, Alt)
 
 # fill in groups that have no samples; replace with zero
@@ -237,10 +249,16 @@ bins_months_prop_table <- bins_months_table %>%
 
 # calculate proportion NA
 not_included <- bins_summary_complete %>%
-  filter((Flow == "NA" | OMR == "NA") | (Flow == "NA" & OMR == "NA")) %>%
-  group_by(Alt) %>%
+  # filter(OMR %in% c("Other", "positive")) %>%
+  filter((Flow == "NA" | OMR == "Other") | (Flow == "NA" & OMR == "Other")) %>%
+  group_by(Alt, OMR) %>%
   summarize(num =sum(n),
-            prop = num/700)
+            prop = round(num/700,2))
+
+# not_included_wide <- not_included %>%
+#   select(-num) %>%
+#   pivot_wider(names_from = "Alt", values_from = "prop")
+# write_csv(not_included_wide, "data_export/data_not_included_allalts.csv")
 
 ## plot results --------------------------
 bins_plotting <- bins_summary_complete %>%
