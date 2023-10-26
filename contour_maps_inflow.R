@@ -34,67 +34,6 @@ library(ggspatial)
 library(deltamapr)
 library(viridis)
 
-# Read/Join data ---------------------------------------------------------
-delta <- st_read("shapefiles/Bay_Delta_Poly_New.shp")
-zoi_file_NAA = list.files("data_raw/zoi/", pattern = "NAA_.*csv$", full.names = TRUE)
-#zoi_file_D1641
-zoi_data <- lapply(zoi_file_NAA, read_csv) %>%
-  bind_rows(.id = "id") %>%
-  mutate(id = paste0("-", substr(zoi_file_NAA[as.numeric(id)],25, 28))) %>%
-  rename(OMR_Flow = id) %>%
-  mutate(OMR_Flow = if_else(OMR_Flow == "-sTha", "<-5500", OMR_Flow))
-nodes <- st_read("shapefiles/nodes.shp") %>%
-  dplyr::select(node)
-nodes_4326 <- st_transform(nodes, crs = 4326) %>%
-  mutate(points = "DSM2 nodes")
-channels0 <- read_csv("data_raw/Reclamation_2021LTO_DSM2_Version806_ChannelLengths.csv") %>%
-  janitor::clean_names()  %>%
-  rename(channel_number = chan_no)
-
-# Drop nodes that are causing issues
-dropNodes <- c(146, 147, 148, 206, 242, 246, 432, 433, 434)
-# Drop duplicate channels
-channels1 <- channels0[!channels0$upnode %in% dropNodes, ]
-channels <- channels1[!channels1$downnode %in% dropNodes, ]
-total_channel_length <- sum(channels$length_feet)
-
-# Join channel lengths with zoi data
-#zoi_channel <- left_join(zoi_data, nodes)
-zoi_channel <- left_join(zoi_data, channels)
-zoi_channel <- merge(zoi_data, channels, by = "channel_number")
-
-# Change projections to 4326 (WGS)
-delta_4326 <- st_transform(delta, crs = 4326) %>%
-  mutate(line = "analysis boundary")
-nodes_4326 <- st_transform(nodes, crs = 4326) %>%
-  mutate(points = "DSM2 nodes")
-WW_Delta_4326 <- st_transform(WW_Delta, crs = st_crs(delta_4326))
-WW_Delta_crop <- st_crop(WW_Delta_4326,xmin = -122.2, xmax = -121, ymin = 37.5, ymax = 38.8) %>%
-  filter(HNAME!= "SAN FRANCISCO BAY")
-plot(WW_Delta_crop)
-
-# Convert data frame to long
-zoi_channel_long <- zoi_channel %>%
-  pivot_longer(cols = c(lolo:hihi), names_to = "group", values_to = "overlap")
-
-# Look at data
-summary_vals <- zoi_channel_long %>%
-  filter(overlap>0) %>%
-  group_by(group, OMR_Flow) %>%
-  summarize(min = min(overlap),
-            max = max(overlap),
-            mean = mean(overlap)) %>%
-  ungroup()
-ggplot(summary_vals) +
-  geom_col(aes(x = OMR_Flow, y = mean, fill = OMR_Flow)) + facet_wrap(~group)+
-  scale_fill_viridis_d()
-ggplot(zoi_channel_long %>% filter(overlap>=0)) +
-  geom_jitter(aes(x = OMR_Flow, y = overlap, color = node)) + facet_wrap(~group)
-ggplot(zoi_channel_long %>% filter(overlap>=0)) +
-  geom_violin(aes(x = OMR_Flow, y = overlap, fill = OMR_Flow)) + facet_wrap(~group) +
-  scale_fill_viridis_d()
-
-
 # Functions ------------------------------------
 
 # Create data frame for each month and flow level
@@ -190,6 +129,67 @@ make_map <- function(grp, clevel){
       labs(title = paste(grp, "contour", clevel))+
       theme_classic())
 }
+
+# Read/Join data ---------------------------------------------------------
+delta <- st_read("shapefiles/Bay_Delta_Poly_New.shp")
+zoi_file_NAA = list.files("data_raw/zoi/", pattern = "NAA_.*csv$", full.names = TRUE)
+#zoi_file_D1641
+zoi_data <- lapply(zoi_file_NAA, read_csv) %>%
+  bind_rows(.id = "id") %>%
+  mutate(id = paste0("-", substr(zoi_file_NAA[as.numeric(id)],25, 28))) %>%
+  rename(OMR_Flow = id) %>%
+  mutate(OMR_Flow = if_else(OMR_Flow == "-sTha", "<-5500", OMR_Flow))
+nodes <- st_read("shapefiles/nodes.shp") %>%
+  dplyr::select(node)
+nodes_4326 <- st_transform(nodes, crs = 4326) %>%
+  mutate(points = "DSM2 nodes")
+channels0 <- read_csv("data_raw/Reclamation_2021LTO_DSM2_Version806_ChannelLengths.csv") %>%
+  janitor::clean_names()  %>%
+  rename(channel_number = chan_no)
+
+# Drop nodes that are causing issues
+dropNodes <- c(146, 147, 148, 206, 242, 246, 432, 433, 434)
+# Drop duplicate channels
+channels1 <- channels0[!channels0$upnode %in% dropNodes, ]
+channels <- channels1[!channels1$downnode %in% dropNodes, ]
+total_channel_length <- sum(channels$length_feet)
+
+# Join channel lengths with zoi data
+#zoi_channel <- left_join(zoi_data, nodes)
+zoi_channel <- left_join(zoi_data, channels)
+zoi_channel <- merge(zoi_data, channels, by = "channel_number")
+
+# Change projections to 4326 (WGS)
+delta_4326 <- st_transform(delta, crs = 4326) %>%
+  mutate(line = "analysis boundary")
+nodes_4326 <- st_transform(nodes, crs = 4326) %>%
+  mutate(points = "DSM2 nodes")
+WW_Delta_4326 <- st_transform(WW_Delta, crs = st_crs(delta_4326))
+WW_Delta_crop <- st_crop(WW_Delta_4326,xmin = -122.2, xmax = -121, ymin = 37.5, ymax = 38.8) %>%
+  filter(HNAME!= "SAN FRANCISCO BAY")
+plot(WW_Delta_crop)
+
+# Convert data frame to long
+zoi_channel_long <- zoi_channel %>%
+  pivot_longer(cols = c(lolo:hihi), names_to = "group", values_to = "overlap")
+
+# Look at data
+summary_vals <- zoi_channel_long %>%
+  filter(overlap>0) %>%
+  group_by(group, OMR_Flow) %>%
+  summarize(min = min(overlap),
+            max = max(overlap),
+            mean = mean(overlap)) %>%
+  ungroup()
+ggplot(summary_vals) +
+  geom_col(aes(x = OMR_Flow, y = mean, fill = OMR_Flow)) + facet_wrap(~group)+
+  scale_fill_viridis_d()
+ggplot(zoi_channel_long %>% filter(overlap>=0)) +
+  geom_jitter(aes(x = OMR_Flow, y = overlap, color = node)) + facet_wrap(~group)
+ggplot(zoi_channel_long %>% filter(overlap>=0)) +
+  geom_violin(aes(x = OMR_Flow, y = overlap, fill = OMR_Flow)) + facet_wrap(~group) +
+  scale_fill_viridis_d()
+
 
 # Analysis ------------------------------
 
@@ -366,6 +366,7 @@ palette <- distinctColorPalette(n)
 
 ## 0.75 ---------------
 inflow_order = c("lolo", "lomed", "lohi", "medlo", "medmed", "medhi", "hilo", "himed", "hihi")
+
 
 # Make one file with all inflow groups
 contourGroup <- contours_all %>%
