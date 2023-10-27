@@ -17,21 +17,18 @@ library(tidyr)
 # Read data -------------------------------
 
 # order
-alt_order = c("EXP1", "EXP3", "NAA",
-              "ALT1",
-              "ALT2a", "ALT2b", "ALT2c", "ALT2d",
-              "ALT3", "ALT4")
+alt_order = c("EXP1", "EXP3", "NAA","ALT1",
+              "ALT2d", "ALT2b", "ALT2c", "ALT2a", "ALT3", "ALT4")
 col_order = c("Flow", "OMR", "OMR_range",  "EXP1", "EXP3", "NAA",
               "ALT1",
-              "ALT2a", "ALT2b", "ALT2c", "ALT2d",
+              "ALT2d", "ALT2b", "ALT2c", "ALT2a",
               "ALT3", "ALT4")
 inflow_order = c("lolo", "lomed", "lohi", "medlo", "medmed", "medhi", "hilo", "himed", "hihi", "NA")
 omr_order = c("< -3500", ">= -3500")
-safe_pal <- c('#003E51','#007396', '#C69214', '#DDCBA4','#FF671F', '#215732','#4C12A1','#9a3324', "#88CCEE","#AA4499")
+pal <- c('#003E51','#007396', '#C69214', '#DDCBA4','#FF671F', '#215732','#4C12A1','#9a3324', "#88CCEE","#AA4499")
 
 # read in data
 bins <- read_excel("data_raw/calsim/Reclamation_2021LTO_SacR_SJR_OMR_Binning_rev01_20230929_result.xlsx", skip = 5)
-
 # rename column names
 colnames(bins) <- c("Date", "Flow_EXP1", "OMR_EXP1", "Flow_EXP3", "OMR_EXP3",
                     "Flow_NAA", "OMR_NAA", "Flow_ALT1", "OMR_ALT1",
@@ -74,9 +71,26 @@ bins_summary_complete <- bins_summary_months %>%
            nesting(Alt),
            fill = list(n = 0))
 
+bins_summary_months_flowgroup <- bins_months %>%
+  group_by(Flow, Alt) %>%
+  summarize(n = n()) %>%
+  ungroup() %>%
+  mutate(Alt = factor(Alt, levels = alt_order ),
+         Flow = factor(Flow, levels = inflow_order)) %>%
+  arrange(Flow,Alt)
+
+bins_summary_complete_flowgroup <- bins_summary_months_flowgroup %>%
+  complete(Flow, nesting(Alt), fill = list(n=0))
+
 # make tables ------------------------------------
 
-# sample sizes
+# flowgroup only
+bins_months_table_flowgroup <- bins_summary_complete_flowgroup %>%
+  pivot_wider(names_from = "Alt", values_from = "n", values_fill = list(n = 0)) %>%
+  arrange(Flow)%>%
+  mutate(Flow = factor(Flow, levels = inflow_order))
+
+# with OMR
 bins_months_table <- bins_summary_complete %>%
   pivot_wider(names_from = "Alt", values_from = "n", values_fill = list(n = 0)) %>%
   arrange(Flow, OMR)%>%
@@ -139,6 +153,8 @@ ggplot(bins_plotting%>% filter(!Alt %in% c("EXP1", "EXP3"))) +
           strip.text = element_text(size = 14),
           legend.position = "top"))
 
+ggplot(bins_months) + geom_boxplot(aes(x = Sac.cfs, y = ))
+
 # export------------
 
 ## write plots------------
@@ -151,6 +167,7 @@ plot_n_alts_omr_inflow_noexp_v2
 dev.off()
 
 ## Write tables --------------------------
+write_csv(bins_months_table_flowgroup, "data_export/flowbin_samplesizes_acrossalts_zoi.csv")
 write_csv(bins_months_table, "data_export/bin_samplesizes_acrossalts_zoi.csv")
 write_csv(bins_months_prop_table, "data_export/bin_prop_samplesizes_acrossalts_zoi.csv")
 
