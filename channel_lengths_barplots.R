@@ -17,180 +17,140 @@ library(stars)
 library(readr)
 library(janitor)
 library(ggpattern)
+source("functions_zoi.R")
 
+# Ordering ----------------------------------
+inflow_order = c("lolo", "lomed", "lohi", "medlo", "medmed", "medhi", "hilo", "himed", "hihi")
+# alt_order = c("EXP1", "EXP3", "NAA","ALT1","Alt2woTUCPwoVA","Alt2woTUCPDeltaVA", "Alt2woTUCPAllVA", "Alt2wTUCPwoVA", "ALT3", "ALT4")
+alt_order = c("NAA","Alt1","Alt2woTUCPwoVA","Alt2woTUCPDeltaVA", "Alt2woTUCPAllVA", "Alt2wTUCPwoVA", "Alt4")
+pal <- c('#003E51','#007396', '#C69214', '#DDCBA4','#FF671F', '#215732','#4C12A1','#9a3324', "#88CCEE","#AA4499")
 
-# Read/Join data ---------------------------------------------------------
-zoi_file_NAA = list.files("data_raw/zoi/", pattern = "NAA_.*csv$", full.names = TRUE)
-zoi_data <- lapply(zoi_file_NAA, read_csv) %>%
-  bind_rows(.id = "id") %>%
-  mutate(id = paste0("-", substr(zoi_file_NAA[as.numeric(id)],25, 28))) %>%
-  rename(OMR_Flow = id) %>%
-  mutate(OMR_Flow = if_else(OMR_Flow == "-sTha", "<-5500", OMR_Flow))
-channels <- read_csv("data_raw/Reclamation_2021LTO_DSM2_Version806_ChannelLengths.csv") %>%
-  janitor::clean_names()  %>%
-  rename(channel_number = chan_no)
+# Read data ---------------------------------------------------------
+# from contour_maps_inflow_allalts.R
+zoi_channel_group <- read_csv("data_export/prop_overlap_data_long.csv") %>%
+  filter(overlap>=0)
 
-
-
-# Drop nodes that are causing issues
-dropNodes <- c(146, 147, 148, 206, 242, 246, 432, 433, 434)
-nodes <- channels[!channels$upnode %in% dropNodes, ]
-nodes <- nodes[!nodes$downnode %in% dropNodes, ]
-channels <- nodes
-
-total_channel_length <- sum(channels$length_feet)
-
-# Join channel lengths with zoi data
-#zoi_channel <- left_join(zoi_data, nodes)
-zoi_channel <- left_join(zoi_data, channels)
-zoi_channel <- merge(zoi_data, channels, by = "channel_number")
-
-
-zoi_channel_group <- zoi_channel %>%
-  pivot_longer(cols = c(lolo, lomed, lohi, medlo, medmed, medhi, hilo, himed, hihi),
-              names_to = "Group",
-               values_to = "p_overlap") %>%
-  filter(p_overlap>=0)
-
+# Filter to contours of interest -------------------------------------
+# Based on BA
 filtered_dat_high <- zoi_channel_group %>%
-  filter(p_overlap < 0.25)
+  filter(overlap < 0.25)
 
 filtered_dat_med <- zoi_channel_group %>%
-  filter(p_overlap >= 0.25 & p_overlap <= 0.75)
+  filter(overlap >= 0.25 & overlap <= 0.75)
 
 filtered_dat_low <- zoi_channel_group %>%
-  filter(p_overlap > 0.75)
+  filter(overlap > 0.75)
 
 
 # Calculate total length -------------------------
 filtered2_high <- filtered_dat_high %>%
-  group_by(Group, OMR_Flow) %>%
+  group_by(group, OMR_Flow, Alt) %>%
   summarize(sumLength = sum(length_feet))%>%
   ungroup() %>%
-  mutate(Group = factor(Group, levels = c("lolo", "lomed", "lohi", "medlo", "medmed", "medhi", "hilo", "himed", "hihi")))%>%
+  mutate(group = factor(group, levels = c("lolo", "lomed", "lohi", "medlo", "medmed", "medhi", "hilo", "himed", "hihi")))%>%
+  mutate(Alt = case_when(Alt == "Alt2d" ~ "Alt2woTUCPwoVA",
+                         Alt == "Alt2b" ~ "Alt2woTUCPDeltaVA",
+                         Alt == "Alt2c" ~ "Alt2woTUCPAllVA",
+                         Alt == "Alt2a" ~ "Alt2wTUCPwoVA",
+                         TRUE ~ Alt),
+         Alt = factor(Alt, levels = alt_order)) %>%
+  mutate(pLength = sumLength/total_channel_length) %>%
+  mutate(h_influence = "Low hydrologic influence")
   mutate(pLength = sumLength/total_channel_length) %>%
   mutate(h_influence = "High hydrologic influence")
 
 filtered2_med <- filtered_dat_med %>%
-  group_by(Group, OMR_Flow) %>%
+  group_by(group, OMR_Flow, Alt) %>%
   summarize(sumLength = sum(length_feet))%>%
   ungroup() %>%
-  mutate(Group = factor(Group, levels = c("lolo", "lomed", "lohi", "medlo", "medmed", "medhi", "hilo", "himed", "hihi"))) %>%
+  mutate(group = factor(group, levels = c("lolo", "lomed", "lohi", "medlo", "medmed", "medhi", "hilo", "himed", "hihi"))) %>%
+  mutate(Alt = case_when(Alt == "Alt2d" ~ "Alt2woTUCPwoVA",
+                         Alt == "Alt2b" ~ "Alt2woTUCPDeltaVA",
+                         Alt == "Alt2c" ~ "Alt2woTUCPAllVA",
+                         Alt == "Alt2a" ~ "Alt2wTUCPwoVA",
+                         TRUE ~ Alt),
+         Alt = factor(Alt, levels = alt_order)) %>%
+  mutate(pLength = sumLength/total_channel_length) %>%
+  mutate(h_influence = "Low hydrologic influence")
   mutate(pLength = sumLength/total_channel_length) %>%
   mutate(h_influence = "Medium hydrologic influence")
 
 filtered2_low <- filtered_dat_low %>%
-  group_by(Group, OMR_Flow) %>%
+  group_by(group, OMR_Flow, Alt) %>%
   summarize(sumLength = sum(length_feet))%>%
   ungroup() %>%
-  mutate(Group = factor(Group, levels = c("lolo", "lomed", "lohi", "medlo", "medmed", "medhi", "hilo", "himed", "hihi"))) %>%
+  mutate(group = factor(group, levels = c("lolo", "lomed", "lohi", "medlo", "medmed", "medhi", "hilo", "himed", "hihi"))) %>%
+  mutate(Alt = case_when(Alt == "Alt2d" ~ "Alt2woTUCPwoVA",
+                         Alt == "Alt2b" ~ "Alt2woTUCPDeltaVA",
+                         Alt == "Alt2c" ~ "Alt2woTUCPAllVA",
+                         Alt == "Alt2a" ~ "Alt2wTUCPwoVA",
+                         TRUE ~ Alt),
+         Alt = factor(Alt, levels = alt_order)) %>%
   mutate(pLength = sumLength/total_channel_length) %>%
   mutate(h_influence = "Low hydrologic influence")
 
+# combine files and rename to  official names
 filtered_dat <- rbind(filtered2_high, filtered2_med, filtered2_low) %>%
-  mutate(h_influence = factor(h_influence, levels = c("Low hydrologic influence", "Medium hydrologic influence", "High hydrologic influence")))
-
+  mutate(h_influence = factor(h_influence, levels = c("Low hydrologic influence", "Medium hydrologic influence", "High hydrologic influence")),
+        Alt = case_when(Alt == "Alt2d" ~ "Alt2woTUCPwoVA",
+                        Alt == "Alt2b" ~ "Alt2woTUCPDeltaVA",
+                        Alt == "Alt2c" ~ "Alt2woTUCPAllVA",
+                        Alt == "Alt2a" ~ "Alt2wTUCPwoVA",
+                        TRUE ~ Alt),
+        Alt = factor(Alt, levels = alt_order))
 
 ## Visualize differences -------------------
+pal <- c('#9a3324', "#88CCEE","#AA4499",'#003E51','#007396', '#C69214', '#DDCBA4','#FF671F', '#215732','#4C12A1')
+# unstacked
 barplot_omr <- ggplot(filtered_dat) +
-  geom_col(aes(Group, pLength, fill = OMR_Flow), position = "dodge2")  +
+  geom_col(aes(Alt, pLength, fill = OMR_Flow), position = "dodge2")  +
   labs(y = "Proportional Channel Length") +
-  viridis::scale_fill_viridis(discrete = TRUE) +
-  facet_wrap(~h_influence, nrow = 2) +
+  viridis::scale_fill_viridis(discrete = TRUE, option = "turbo") +
+  facet_grid(group~h_influence) +
   theme_bw()
 barplot_omr
 
-(stacked_barplot <- ggplot(filtered_dat) +
-  geom_col(aes(OMR_Flow, pLength, fill = OMR_Flow, color = h_influence, group = OMR_Flow))  +
-  labs(y = "Proportional Channel Length") +
-    facet_wrap(~Group) +
-  viridis::scale_fill_viridis(discrete = TRUE) +
-  theme_bw())
-
-(stacked_barplot <- ggplot(filtered_dat, aes(x = OMR_Flow, y = pLength, fill = OMR_Flow, pattern = h_influence)) +
-    geom_col_pattern(color = "gray20",
-                     pattern_color = "gray80",
-                     pattern_fill = "gray70",
-                     pattern_spacing = 0.05,
-                     pattern_size = 0.4,
-                     alpha = 0.9)  +
-    labs(y = "Proportional Channel Length") +
-    scale_pattern_manual(values = c("circle", "none", "stripe")) +
-    facet_wrap(~Group) +
-    viridis::scale_fill_viridis(discrete = TRUE) +
-    # guides(pattern_fill = "none",
-    #        pattern = "none") +
-    theme_classic() +
-    theme(legend.position = "top",
-          legend.box = "vertical"))
-
-png("figures/proportional_channel_length_dropnodes_new.png", width = 7, height = 9, units = "in", res = 300, pointsize = 9)
-barplot_omr
-dev.off()
-
-stacked_barplot
-ggsave("figures/attachment_plots/stacked_barplot_channellengths_new.png", width = 7.2, height = 8, units = "in", dpi = 300)
-
-
-## Look at map --------------------------
-# Visualization
-library(ggmap)
-library(ggspatial)
-library(deltamapr)
-library(viridis)
-library(sf)
-library(purrr)
-
-# Change all to 4326 (WGS)
-delta <- st_read("shapefiles/Bay_Delta_Poly_New.shp")
-delta_4326 <- st_transform(delta, crs = 4326) %>%
-  mutate(line = "analysis boundary")
-WW_Delta_4326 <- st_transform(WW_Delta, crs = st_crs(delta_4326))
-WW_Delta_crop <- st_crop(WW_Delta_4326,xmin = -122.2, xmax = -121, ymin = 37.5, ymax = 38.8) %>%
-  filter(HNAME!= "SAN FRANCISCO BAY")
-nodes <- st_read("shapefiles/nodes.shp") %>%
-  dplyr::select(node)
-nodes_4326 <- st_transform(nodes, crs = st_crs(delta_4326)) %>%
-  mutate(points = "DSM2 nodes")
-
-dataA <- inner_join(nodes_4326, filtered_dat_high)
-data <- dataA %>%
-  mutate(long = unlist(map(dataA$geometry,1)),
-         lat = unlist(map(dataA$geometry,2)))
-
-weird <- filter(data, long < -121.8) #nodes 432, 433, 434
-
-data2 <- inner_join(nodes_4326, filtered_dat_med)%>%
-  mutate(long = unlist(map(data2$geometry,1)),
-         lat = unlist(map(data2$geometry,2)))
-
-
-(map_omr_high <- ggplot() +
-     geom_sf(data = WW_Delta_crop, color = "gray94") +
-    geom_sf(data = delta_4326, aes(linetype = line), fill = NA, inherit.aes = FALSE)+
-  geom_sf(data = data, aes(color = OMR_Flow, shape = OMR_Flow), alpha = 0.3, size = 3,inherit.aes = FALSE) +
-    facet_wrap(~Group) +
-  labs(title = "Nodes with <0.25 similarity under different OMR Levels", color = "OMR",
-       shape = "OMR") +
+# look at just medium
+med_barplot <- filtered2_med %>%
+  ggplot() +
+  geom_col(aes(OMR_Flow, pLength, fill = Alt), position= "dodge2") +
+  facet_wrap(~group) +
+  labs(y = "Proportional Channel Length", title = "Medium hydro influence") +
   theme_bw() +
-  theme(axis.text.x = element_text(angle = 90)))
+  scale_fill_manual(values = pal[c(3,4,5,6,7,8,10)])
+ggsave(filename="figures/attachment_plots/med_influence_barplots.png", plot=med_barplot, height = 6, width = 7, units = "in")
 
-png("figures/high_influence_map.png", width = 8, height = 6, units = "in", res = 300)
-map_omr_high
-dev.off()
+# look at just high
+filtered2_high %>%
+  ggplot() +
+  geom_col(aes(OMR_Flow, pLength, fill = Alt), position= "dodge2") +
+  facet_wrap(~group) +
+  labs(y = "Proportional Channel Length", title = "High hydro influence") +
+  theme_bw() +
+  scale_fill_manual(values = pal[c(3,4,5,6,7,8,10)])
 
+# write out all the stacked barplots
+lapply(inflow_order, plot_barplot)
 
+# individual plot
+plot_barplot("lohi")
 
-(map_omr_med <- ggplot() +
-    geom_sf(data = WW_Delta_crop, color = "gray94") +
-    geom_sf(data = delta_4326, aes(linetype = line), fill = NA, inherit.aes = FALSE)+
-    geom_sf(data = data2, aes(color = OMR_Flow, shape = OMR_Flow), alpha = 0.3, size = 3,inherit.aes = FALSE) +
-    facet_wrap(~Group) +
-
-    labs(title = "Nodes with 0.25-0.75 similarity under different OMR Levels", color = "OMR",
-         shape = "OMR") +
-    theme_bw() +
-    theme(axis.text.x = element_text(angle = 90)))
-png("figures/med_influence_map.png", width = 8, height = 6, units = "in", res = 300)
-map_omr_med
-dev.off()
+# faceted all
+barplot_f <-
+  filtered_dat %>%
+  ggplot(aes(x = Alt, y = pLength, fill = Alt, pattern = h_influence)) +
+  geom_col_pattern(color = "black",
+                   pattern_color = "black",
+                   pattern_fill = "black",
+                   pattern_spacing = 0.05,
+                   pattern_size = 0.4,
+                   alpha = 0.9)  +
+  labs(y = "Proportional Channel Length") +
+  scale_pattern_manual(values = c("none", "circle", "stripe")) +
+  facet_grid(group~OMR_Flow) +
+  scale_fill_manual(values = pal[c(3,4,5,6,7,8,10)]) +
+  theme_classic() +
+  theme(legend.position = "top",
+        legend.box = "vertical",
+        axis.text.x = element_text(angle = 45, hjust = 0.5, vjust = 0.5))
+ggsave(filename="figures/attachment_plots/stacked_barplot_all.png", plot=barplot_f, height = 10, width = 7, units = "in")

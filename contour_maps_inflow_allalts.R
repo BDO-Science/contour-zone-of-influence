@@ -124,9 +124,12 @@ plot(WW_Delta_crop)
 zoi_channel_long <- zoi_channel %>%
   pivot_longer(cols = c(lolo:hihi), names_to = "group", values_to = "overlap")
 
+# Write data for channel length script
+# write_csv(zoi_channel_long, "data_export/prop_overlap_data_long.csv")
+
 # Look at data
 summary_vals <- zoi_channel_long %>%
-  filter(overlap>0) %>%
+  filter(overlap>=0) %>%
   group_by(group, OMR_Flow, Alt) %>%
   summarize(min = min(overlap),
             max = max(overlap),
@@ -143,20 +146,36 @@ ggplot(zoi_channel_long %>% filter(overlap>=0)) +
   scale_fill_viridis_d()
 
 # Create data frames for each inflow-OMR group --------------------
-
-delta_sp <- as(delta_4326, "Spatial")
-
-
-# Run function
-inflow_order = c("lolo", "lomed", "lohi", "medlo", "medmed", "medhi", "hilo", "himed", "hihi")
-alt_order = c("NAA","ALT1","ALT2a", "ALT2b", "ALT2c", "ALT2d","ALT4")
-
+# Look at sample sizes
+png("figures/allalts_missingcombos.png", units = "in", width = 7, height = 7, res = 300)
 zoi_channel_long %>% filter(overlap>=0) %>%
   group_by(Alt, group, OMR_Flow) %>%
   summarize(n = n()) %>%
   mutate(group = factor(group, levels = inflow_order)) %>%
   ggplot()  + geom_tile(aes(x = OMR_Flow, y = group, fill = n), color = "black") + facet_wrap(~Alt) +
+  theme_bw() +
   theme(axis.text.x = element_text(angle = 90))
+dev.off()
+
+png("figures/allalts_samplesizes_medhydro.png", units = "in", width = 7, height = 7, res = 300)
+zoi_channel_long %>% filter(overlap>=0 & overlap <=0.75) %>%
+  group_by(Alt, group, OMR_Flow) %>%
+  summarize(n = n()) %>%
+  mutate(group = factor(group, levels = inflow_order)) %>%
+  ggplot()  +
+  geom_tile(aes(x = OMR_Flow, y = group, fill = n), color = "black") +
+  geom_text(aes(x = OMR_Flow, y = group, label = n), color = "gray65", size = 2.7) +
+  facet_wrap(~Alt) +
+  viridis::scale_fill_viridis(option = "plasma") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90))
+dev.off()
+
+
+# Run function
+inflow_order = c("lolo", "lomed", "lohi", "medlo", "medmed", "medhi", "hilo", "himed", "hihi")
+alt_order = c("NAA","ALT1","ALT2a", "ALT2b", "ALT2c", "ALT2d","ALT4")
+delta_sp <- as(delta_4326, "Spatial")
 
 # NAA
 lolo_contour_NAA <- f_data_interp_contour(gpname = "lolo", altname = "NAA")
@@ -282,23 +301,32 @@ save(contours_all_NAA, contours_all_Alt1, contours_all_Alt2a, contours_all_Alt2b
 
 
 # Make one file for all
+alt_order = c("NAA","Alt1","Alt2woTUCPwoVA","Alt2woTUCPDeltaVA", "Alt2woTUCPAllVA", "Alt2wTUCPwoVA", "Alt4")
+
 contourGroup <- rbind(contours_all_NAA, contours_all_Alt1, contours_all_Alt2a, contours_all_Alt2b,
                       contours_all_Alt2c, contours_all_Alt2d, contours_all_Alt4)%>%
   mutate(grouper = paste0(group, "_", flow, group2),
          label = paste0(group2, "_", flow)) %>%
   rename(Inflow = group2) %>%
-  mutate(Inflow = factor(Inflow, levels = inflow_order))
+  mutate(Inflow = factor(Inflow, levels = inflow_order)) %>%
+  mutate(Alt = case_when(Alt == "Alt2d" ~ "Alt2woTUCPwoVA",
+                         Alt == "Alt2b" ~ "Alt2woTUCPDeltaVA",
+                         Alt == "Alt2c" ~ "Alt2woTUCPAllVA",
+                         Alt == "Alt2a" ~ "Alt2wTUCPwoVA",
+                         TRUE ~ Alt),
+         Alt = factor(Alt, levels = alt_order))
 
 library(purrr)
 map2(.x=alt_order, .y = c(0.25, 0.75), .f = plot_contours(alt = .x, cont = .y))
 
+lapply(alt_order, plot_contours(alt = alt_order, cont = 0.75))
 # Make plots
 plot_contours(alt = "NAA", cont = 0.75)
 plot_contours(alt = "Alt1", cont = 0.75)
-plot_contours(alt = "Alt2a", cont = 0.75)
-plot_contours(alt = "Alt2b", cont = 0.75)
-plot_contours(alt = "Alt2c", cont = 0.75)
-plot_contours(alt = "Alt2d", cont = 0.75)
+plot_contours(alt = "Alt2wTUCPwoVA", cont = 0.75)
+plot_contours(alt = "Alt2woTUCPDeltaVA", cont = 0.75)
+plot_contours(alt = "Alt2woTUCPAllVA", cont = 0.75)
+plot_contours(alt = "Alt2woTUCPwoVA", cont = 0.75)
 plot_contours(alt = "Alt4", cont = 0.75)
 plot_contours(alt = "NAA", cont = 0.25)
 plot_contours(alt = "Alt1", cont = 0.25)
@@ -307,4 +335,7 @@ plot_contours(alt = "Alt2b", cont = 0.25)
 plot_contours(alt = "Alt2c", cont = 0.25)
 plot_contours(alt = "Alt2d", cont = 0.25)
 plot_contours(alt = "Alt4", cont = 0.25)
+
+plot_contours_facetalt(grp = "lolo", cont = 0.75)
+plot_contours_facetalt(grp = "hihi", cont = 0.75)
 
