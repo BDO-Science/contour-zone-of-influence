@@ -13,7 +13,8 @@ Files:
 2. Inflow and OMR groupings based on NAA and detailed in: 
 	make_plot_inflow_subsets_NAA.R
 3. Make contour plots from proportion overlap data: 
-	contour_maps_inflow.R
+	contour_maps_inflow_allalts.R
+	functions_zoi.R	
 4. Channel length analyses and barplot-making code: 
 	channel_lengths_barplots.R
 5. Original contour map and channel length analyses based on month: 
