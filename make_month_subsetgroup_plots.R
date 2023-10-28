@@ -29,14 +29,22 @@ flow_OMR_table_summary <- flow_table %>%
 # Plot data ------------------------------------------------
 # Make plots of month
 
+png(filename = "figures/month_inflowbin_samplesizes_NAA.png")
 ggplot(flow_table_summary) + geom_tile(aes(x = Sub.group, y = Month, fill = n), color = "black") +
   theme_classic()
+dev.off()
 
 ggplot(feb) + geom_point(aes(x = Sac.cfs, y = OMR, color = OMR_group))
-ggplot(flow_table) + geom_point(aes(x = Sac.cfs, y = OMR, color = OMR_group), size = 3) + facet_wrap(~Month) +
-  scale_color_viridis_d()
-ggplot(flow_table %>% filter(SJR.cfs < 20000)) + geom_point(aes(x = SJR.cfs, y = OMR, color = OMR_group), size = 3) + facet_wrap(~Month) +
-  scale_color_viridis_d()
+
+png(filename = "figures/month_missingOMR_Sacflow_NAA.png", units = "in", width= 8, height = 7, res = 300)
+ggplot(flow_table) + geom_point(aes(x = Sac.cfs, y = OMR, color = OMR_group), size = 2) + facet_wrap(~Month) +
+  scale_color_viridis_d() + theme_bw()
+dev.off()
+
+png(filename = "figures/month_missingOMR_Sjrflow_NAA.png", units = "in", width= 8, height = 7, res = 300)
+ggplot(flow_table %>% filter(SJR.cfs < 20000)) + geom_point(aes(x = SJR.cfs, y = OMR, color = OMR_group), size = 2) + facet_wrap(~Month) +
+  scale_color_viridis_d() + theme_bw()
+dev.off()
 
 
 ggplot(flow_table) +
