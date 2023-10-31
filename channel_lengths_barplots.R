@@ -55,8 +55,6 @@ filtered2_high <- filtered_dat_high %>%
                          TRUE ~ Alt),
          Alt = factor(Alt, levels = alt_order)) %>%
   mutate(pLength = sumLength/total_channel_length) %>%
-  mutate(h_influence = "Low hydrologic influence")
-  mutate(pLength = sumLength/total_channel_length) %>%
   mutate(h_influence = "High hydrologic influence")
 
 filtered2_med <- filtered_dat_med %>%
@@ -70,8 +68,6 @@ filtered2_med <- filtered_dat_med %>%
                          Alt == "Alt2a" ~ "Alt2wTUCPwoVA",
                          TRUE ~ Alt),
          Alt = factor(Alt, levels = alt_order)) %>%
-  mutate(pLength = sumLength/total_channel_length) %>%
-  mutate(h_influence = "Low hydrologic influence")
   mutate(pLength = sumLength/total_channel_length) %>%
   mutate(h_influence = "Medium hydrologic influence")
 
@@ -129,7 +125,47 @@ filtered2_high %>%
   theme_bw() +
   scale_fill_manual(values = pal[c(3,4,5,6,7,8,10)])
 
-# write out all the stacked barplots
+# make medium table --------------------------------------
+med_table <- filtered2_med %>%
+  dplyr::select(-pLength,-h_influence) %>%
+  mutate(Alt = factor(Alt, levels = alt_order)) %>%
+  pivot_wider(names_from = "Alt", values_from = "sumLength", values_fill = list(n = 0)) %>%
+  arrange(group) %>%
+  mutate(group = factor(group, levels = inflow_order))%>%
+  dplyr::select(group, OMR_Flow, NAA, Alt1, Alt2woTUCPwoVA, Alt2woTUCPDeltaVA, Alt2woTUCPAllVA, everything())
+
+med_table_long <- med_table %>%
+  pivot_longer(cols = NAA:Alt4, values_to = "sumLength", names_to = "Alt")
+
+med_prop <- med_table %>%
+  dplyr::select(group, OMR_Flow, NAA, everything()) %>%
+  mutate(across(NAA:Alt4, ~ round((.x-NAA)/NAA * 100))) %>%
+  pivot_longer(cols = NAA:Alt4, values_to = "changeLength", names_to = "Alt")
+
+med_table_EIS <- left_join(med_table_long, med_prop) %>%
+  # mutate_if(is.numeric, ~as.character(.),
+            # is.character, ~replace_na(.,""))
+  mutate(length_change = paste0(sumLength, " (", changeLength, "%)" )) %>%
+  mutate(length_change = replace(length_change, length_change == "NA (NA%)", "NA")) %>%
+  dplyr::select(-sumLength, -changeLength) %>%
+  pivot_wider(names_from = "Alt", values_from = "length_change", values_fill = list(n = 0)) %>%
+  arrange(group) %>%
+  mutate(group = factor(group, levels = inflow_order))%>%
+  dplyr::select(`Inflow group` = group, `OMR bin` = OMR_Flow,
+                NAA, Alt1, Alt2woTUCPwoVA, Alt2woTUCPDeltaVA, Alt2woTUCPAllVA, everything())
+
+med_table_BA <- med_table %>%
+  dplyr::select(`Inflow group` = group, `OMR bin` = OMR_Flow, NAA, Alt2woTUCPwoVA, Alt2woTUCPDeltaVA, Alt2woTUCPAllVA, Alt2wTUCPwoVA)
+
+# write tables
+# write_csv(med_table_EIS, "data_export/medium_hydro_channel_length_EIS.csv")
+# write_csv(med_table_BA, "data_export/medium_hydro_channel_length_BA.csv")
+
+# Calculate lows and highs
+ordered_medium <- med_table_long %>% arrange(sumLength)
+
+
+# write out all the stacked barplots -----------------------------
 lapply(inflow_order, plot_barplot)
 
 # individual plot
