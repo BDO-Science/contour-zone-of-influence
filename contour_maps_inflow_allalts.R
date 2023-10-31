@@ -59,7 +59,7 @@ zoi_data_Alt1 <- lapply(zoi_file_Alt1, read_csv) %>%
   mutate(Alt = "Alt1")
 zoi_data_Alt2a <- lapply(zoi_file_Alt2a, read_csv) %>%
   bind_rows(.id = "id") %>%
-  mutate(id = paste0("-", substr(zoi_file_Alt1[as.numeric(id)],25, 28))) %>%
+  mutate(id = paste0("-", substr(zoi_file_Alt2a[as.numeric(id)],25, 28))) %>%
   rename(OMR_Flow = id) %>%
   mutate(OMR_Flow = if_else(OMR_Flow == "-sTha", "<-5500", OMR_Flow)) %>%
   mutate(Alt = "Alt2a")
@@ -125,7 +125,7 @@ zoi_channel_long <- zoi_channel %>%
   pivot_longer(cols = c(lolo:hihi), names_to = "group", values_to = "overlap")
 
 # Write data for channel length script
-# write_csv(zoi_channel_long, "data_export/prop_overlap_data_long.csv")
+#  write_csv(zoi_channel_long, "data_export/prop_overlap_data_long.csv")
 
 # Look at data
 summary_vals <- zoi_channel_long %>%
