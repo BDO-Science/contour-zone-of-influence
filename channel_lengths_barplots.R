@@ -23,7 +23,6 @@ source("functions_zoi.R")
 inflow_order = c("lolo", "lomed", "lohi", "medlo", "medmed", "medhi", "hilo", "himed", "hihi")
 # alt_order = c("EXP1", "EXP3", "NAA","ALT1","Alt2woTUCPwoVA","Alt2woTUCPDeltaVA", "Alt2woTUCPAllVA", "Alt2wTUCPwoVA", "ALT3", "ALT4")
 alt_order = c("NAA","Alt1","Alt2woTUCPwoVA","Alt2woTUCPDeltaVA", "Alt2woTUCPAllVA", "Alt2wTUCPwoVA", "Alt4")
-pal <- c('#003E51','#007396', '#C69214', '#DDCBA4','#FF671F', '#215732','#4C12A1','#9a3324', "#88CCEE","#AA4499")
 
 # Read data ---------------------------------------------------------
 # from contour_maps_inflow_allalts.R
@@ -69,7 +68,8 @@ filtered2_med <- filtered_dat_med %>%
                          TRUE ~ Alt),
          Alt = factor(Alt, levels = alt_order)) %>%
   mutate(pLength = sumLength/total_channel_length) %>%
-  mutate(h_influence = "Medium hydrologic influence")
+  mutate(h_influence = "Medium hydrologic influence") %>%
+  mutate(Alt = factor(Alt, levels = alt_order))
 
 filtered2_low <- filtered_dat_low %>%
   group_by(group, OMR_Flow, Alt) %>%
@@ -114,7 +114,17 @@ med_barplot <- filtered2_med %>%
   labs(y = "Proportional Channel Length", title = "Medium hydro influence") +
   theme_bw() +
   scale_fill_manual(values = pal[c(3,4,5,6,7,8,10)])
-ggsave(filename="figures/attachment_plots/med_influence_barplots.png", plot=med_barplot, height = 6, width = 7, units = "in")
+ggsave(filename="figures/attachment_plots/med_influence_omr_barplots.png", plot=med_barplot, height = 6, width = 7, units = "in")
+
+(med_barplot2 <- filtered2_med %>%
+  ggplot() +
+  geom_col(aes(group, pLength, fill = Alt), position= "dodge2") +
+  facet_wrap(~OMR_Flow) +
+  labs(y = "Proportional Channel Length", x = "Inflow Group", title = "Medium hydro influence") +
+  theme_bw() +
+    theme(axis.text.x = element_text(angle = 90)) +
+  scale_fill_manual(values = pal[c(3,4,5,6,7,8,10)]))
+ggsave(filename="figures/attachment_plots/med_influence_inflow_barplots.png", plot=med_barplot2, height = 6, width = 7, units = "in")
 
 # look at just high
 filtered2_high %>%
