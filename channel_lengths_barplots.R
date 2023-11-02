@@ -44,7 +44,7 @@ filtered_dat_low <- zoi_channel_group %>%
 # Calculate total length -------------------------
 filtered2_high <- filtered_dat_high %>%
   group_by(group, OMR_Flow, Alt) %>%
-  summarize(sumLength = sum(length_feet))%>%
+  summarize(sumLength = sum(length))%>%
   ungroup() %>%
   mutate(group = factor(group, levels = c("lolo", "lomed", "lohi", "medlo", "medmed", "medhi", "hilo", "himed", "hihi")))%>%
   mutate(Alt = case_when(Alt == "Alt2d" ~ "Alt2woTUCPwoVA",
@@ -58,7 +58,7 @@ filtered2_high <- filtered_dat_high %>%
 
 filtered2_med <- filtered_dat_med %>%
   group_by(group, OMR_Flow, Alt) %>%
-  summarize(sumLength = sum(length_feet))%>%
+  summarize(sumLength = sum(length))%>%
   ungroup() %>%
   mutate(group = factor(group, levels = c("lolo", "lomed", "lohi", "medlo", "medmed", "medhi", "hilo", "himed", "hihi"))) %>%
   mutate(Alt = case_when(Alt == "Alt2d" ~ "Alt2woTUCPwoVA",
@@ -73,7 +73,7 @@ filtered2_med <- filtered_dat_med %>%
 
 filtered2_low <- filtered_dat_low %>%
   group_by(group, OMR_Flow, Alt) %>%
-  summarize(sumLength = sum(length_feet))%>%
+  summarize(sumLength = sum(length))%>%
   ungroup() %>%
   mutate(group = factor(group, levels = c("lolo", "lomed", "lohi", "medlo", "medmed", "medhi", "hilo", "himed", "hihi"))) %>%
   mutate(Alt = case_when(Alt == "Alt2d" ~ "Alt2woTUCPwoVA",

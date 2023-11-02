@@ -94,16 +94,17 @@ nodes <- st_read("shapefiles/nodes.shp") %>%
   dplyr::select(node)
 nodes_4326 <- st_transform(nodes, crs = 4326) %>%
   mutate(points = "DSM2 nodes")
-channels0 <- read_csv("data_raw/Reclamation_2021LTO_DSM2_Version806_ChannelLengths.csv") %>%
+channels0 <- read_csv("data_raw/DSM2_Version822_Grid_20231102.csv") %>%
   janitor::clean_names()  %>%
-  rename(channel_number = chan_no)
+  rename(channel_number = chan_no) %>%
+  dplyr::select(-manning, -dispersion)
 
 # Drop nodes that are causing issues
 dropNodes <- c(146, 147, 148, 206, 242, 246, 432, 433, 434)
 # Drop duplicate channels
 channels1 <- channels0[!channels0$upnode %in% dropNodes, ]
 channels <- channels1[!channels1$downnode %in% dropNodes, ]
-total_channel_length <- sum(channels$length_feet)
+total_channel_length <- sum(channels$length)
 
 # Join channel lengths with zoi data
 #zoi_channel <- left_join(zoi_data, nodes)
@@ -125,7 +126,7 @@ zoi_channel_long <- zoi_channel %>%
   pivot_longer(cols = c(lolo:hihi), names_to = "group", values_to = "overlap")
 
 # Write data for channel length script
-#  write_csv(zoi_channel_long, "data_export/prop_overlap_data_long.csv")
+# write_csv(zoi_channel_long, "data_export/prop_overlap_data_long.csv")
 
 # Look at data
 summary_vals <- zoi_channel_long %>%
