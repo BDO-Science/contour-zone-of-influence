@@ -1,7 +1,7 @@
 Zone of Influence README
 by: Catarina Pien and Lisa Elliott, Bureau of Reclamation
 contact: cpien@usbr.gov, lelliott@usbr.gov
-last updated: 10/31/2023
+last updated: 11/2/2023
 
 Although this code has been processed successfully on a computer system at the Bureau of Reclamation (Reclamation),
 no warranty expressed or implied is made regarding the display or utility of the code for other purposes,
@@ -17,7 +17,7 @@ Inputs
 2. Proportional overlap data for contour plots (from DSM2 data):
   data_raw/zoi/*
 3. Channel lengths (combined here but not used specifically for contours):
-  data_raw/Reclamation_2021LTO_DSM2_Version806_ChannelLengths.csv
+  data_raw/DSM2_Version822_Grid_20231102.csv
 4. Shapefile of bay delta for interpolation boundary:
   shapefiles/Bay_Delta_Poly_New.shp
 5. Exported proportional overlap data from contour plots:
@@ -33,7 +33,7 @@ Code
 	channel_lengths_barplots.R
 	functions_zoi.R
 4. Original contour map and channel length analyses based on month:
-	make_contours_updatedDSM2.R
+	archive/make_contours_updatedDSM2.R
 
 Files not directly used in LTO:
 
