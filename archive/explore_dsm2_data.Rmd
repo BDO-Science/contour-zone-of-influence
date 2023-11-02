@@ -1,0 +1,335 @@
+---
+title: "explore_dsm2_data"
+author: "Catarina Pien"
+date: '2023-07-14'
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+
+```
+
+```{r}
+library(readr)
+library(dplyr)
+library(lubridate)
+library(overlapping)
+library(deltamapr)
+library(sf)
+library(mapview)
+```
+
+# Read in files
+
+```{r}
+# Mapping data ---------------------------------------------------------
+# delta <- st_read("shapefiles/Bay_Delta_Poly_New.shp")
+nodes <- st_read("shapefiles/nodes.shp") %>%
+  dplyr::select(node)
+nodes_4326 <- st_transform(nodes, crs = 4326) %>%
+  mutate(points = "DSM2 nodes")
+channels0 <- read_csv("data_updatedDSM2/Reclamation_2021LTO_DSM2_Version806_ChannelLengths.csv") %>%
+  janitor::clean_names()  %>%
+  rename(channel_number = chan_no)
+WW_Delta_4326 <- st_transform(WW_Delta, crs = 4326)
+WW_Delta_crop <- st_crop(WW_Delta_4326,xmin = -122.2, xmax = -121, ymin = 37.5, ymax = 38.8) %>%
+  filter(HNAME!= "SAN FRANCISCO BAY")
+```
+
+## Pick nodes of interest
+```{r}
+ggplot() +
+  geom_sf(data = WW_Delta_crop, aes(geometry = geometry, fill = "TYPE"), 
+           fill = "lightskyblue2", color = "lightskyblue2", alpha = 0.7, show.legend = "polygon", inherit.aes = FALSE) +
+ geom_sf_text(data = nodes_4326, aes(label = node), size = 2, color = "gray30",  inherit.aes = FALSE) +
+  theme_bw()
+
+mapview(nodes_4326, zcol = "node")
+```
+
+## Raw data
+
+data for mike
+```{r}
+# mb1 <- read_csv("data_raw/channel_ids_50_through_59.csv")
+# mb2 <- read_csv("data_raw/channel_ids_40_through_49.csv")
+# 
+# mb <- rbind(mb1, mb2) %>%
+#   filter(node %in% c(37, 39, 8, 52))
+# saveRDS(mb, "data_raw/channels_for_mike.rds", compress = "xz")
+
+# mb <- readRDS("data_raw/channels_for_mike.rds")
+# mb <- filter(mb, node == 8)
+```
+
+other files of interest
+```{r}
+# nodes: 26, 31, 38, 93, 351
+
+# This one for Rio Vista, node 351/431
+file1 <- read_csv("data_raw/channel_ids_410_through_419.csv") %>%
+  rename(OMR = `OMR (cfs)`,
+         SAC = `SAC Freeport (cfs)`,
+         SJR = `SJR Vernalis (cfs)`) %>%
+  filter(month(Date) %in% c(1, 2, 3, 4, 5, 6)) %>%
+  filter(node == 351, channel_number == 431)
+
+# This one is for node 26. channum options = 26 and 30
+file2 <- read_csv("data_raw/channel_ids_20_through_29.csv") %>%
+  rename(OMR = `OMR (cfs)`,
+         SAC = `SAC Freeport (cfs)`,
+         SJR = `SJR Vernalis (cfs)`)%>%
+  filter(month(Date) %in% c(1, 2, 3, 4, 5, 6))%>%
+  filter(node == 26, channel_number == 30)
+
+# This one is for node 31/ channum options = 33 and 35
+file3 <- read_csv("data_raw/channel_ids_30_through_39.csv") %>%
+  rename(OMR = `OMR (cfs)`,
+         SAC = `SAC Freeport (cfs)`,
+         SJR = `SJR Vernalis (cfs)`)%>%
+  filter(month(Date) %in% c(1, 2, 3, 4, 5, 6))%>%
+  filter(node == 31, channel_number == 35)
+
+# This one is for node 38/43
+file4 <- read_csv("data_raw/channel_ids_40_through_49.csv") %>%
+  rename(OMR = `OMR (cfs)`,
+         SAC = `SAC Freeport (cfs)`,
+         SJR = `SJR Vernalis (cfs)`)%>%
+  filter(month(Date) %in% c(1, 2, 3, 4, 5, 6))%>%
+  filter(node == 38, channel_number == 43)
+
+# This one is for node 93/108
+file5 <- read_csv("data_raw/channel_ids_100_through_109.csv") %>%
+  rename(OMR = `OMR (cfs)`,
+         SAC = `SAC Freeport (cfs)`,
+         SJR = `SJR Vernalis (cfs)`)%>%
+  filter(month(Date) %in% c(1, 2, 3, 4, 5, 6))%>%
+  filter(node == 93, channel_number == 108)
+
+# This one is for node 461/50
+file6 <- read_csv("data_raw/channel_ids_50_through_59.csv") %>%
+  rename(OMR = `OMR (cfs)`,
+         SAC = `SAC Freeport (cfs)`,
+         SJR = `SJR Vernalis (cfs)`)%>%
+  filter(month(Date) %in% c(1, 2, 3, 4, 5, 6))%>%
+  filter(node == 461, channel_number == 51)
+
+
+glimpse(file1)
+
+# dsm2_files <- list.files("data_raw/", pattern = "*.csv", full.names = TRUE)
+# dsm2_comb <- lapply(dsm2_files, read_csv) %>%
+#   bind_rows()
+```
+
+# Calculate average monthly OMR
+```{r}
+# combination of nodes (listed above)-----------------
+file <- rbind(file1, file2, file3, file4, file5, file6) %>%
+  mutate(month = month(Date),
+         year = year(Date), 
+         date = date(Date)) %>%
+  group_by(node, month, year) %>%
+  mutate(monthlyOMR = mean(OMR, na.rm = TRUE),
+         monthlySAC = mean(SAC, na.rm = TRUE),
+         monthlySJR = mean(SJR, na.rm = TRUE)) %>%
+  ungroup()
+
+# node 8-----------------------------------
+example <- mb %>%
+  rename(OMR = `OMR (cfs)`,
+         SAC = `SAC Freeport (cfs)`,
+         SJR = `SJR Vernalis (cfs)`)%>%
+  filter(month(Date) %in% c(1, 2, 3, 4, 5, 6))%>%
+  mutate(month = month(Date),
+         year = year(Date),
+         date = date(Date)) %>%
+  group_by(node, month, year) %>%
+  mutate(monthlyOMR = mean(OMR, na.rm = TRUE)) %>%
+  ungroup()
+
+example8 <- example %>%
+  filter
+```
+
+
+## Filter data to respective OMRs
+```{r}
+nodeNum = 8 # so that I just need to change it once
+file <- example
+# divvy up into respective files
+ex_5000 <- filter(file, monthlyOMR >= -5500 & monthlyOMR <= -4500)
+ex_3000 <- filter(file, monthlyOMR >= -3500 & monthlyOMR <= -2500)
+ex_2000 <- dplyr::filter(file, monthlyOMR >= -2500 & monthlyOMR <= -1500)
+
+node50 <- filter(ex_5000, node == nodeNum)
+node30 <- filter(ex_3000, node == nodeNum)
+node20 <- filter(ex_2000, node == nodeNum)
+```
+
+
+# Look at density curves
+```{r}
+# base R code -------------------------------
+lower <- min(c(node50$Velocity_Pumping, node50$Velocity_No_Pumping)) - 1 
+upper <- max(c(node50$Velocity_Pumping, node50$Velocity_No_Pumping)) + 1
+d.p <- density(node50$Velocity_Pumping, from=lower, to=upper, bw = 0.1)
+d.np <- density(node50$Velocity_No_Pumping, from=lower, to=upper, bw = 0.1)
+
+plot(d.p, type = "n")
+polygon(d.p, col = rgb(0.8,0,0, 0.4))
+polygon(d.np, col = rgb(0,0.5,0.8, 0.3))
+
+# overlap code --------------------------------
+nodes_list1 <- list(node50$Velocity_Pumping, node50$Velocity_No_Pumping)
+nodes_list2 <- list(node30$Velocity_Pumping, node30$Velocity_No_Pumping)
+nodes_list3 <- list(node20$Velocity_Pumping, node20$Velocity_No_Pumping)
+out1 <- overlap(nodes_list1, nbins = 100, plot = TRUE, type = "2")
+out2 <- overlap(nodes_list2, nbins = 100, plot = TRUE, type = "2")
+out3 <- overlap(nodes_list3, nbins = 100, plot = TRUE, type = "2")
+
+overlap <- data.frame(node = nodeNum, omr = c(-5000, -3000, -2000), ov = c(out1$OV, out2$OV, out3$OV))
+print(overlap)
+
+ggplot(node50) + 
+  geom_density(aes(Velocity_No_Pumping), color = "navy", fill = "navy", alpha = 0.5) +
+  geom_density(aes(Velocity_Pumping), color = "red", fill = "red", alpha = 0.5) +
+  theme_bw() + 
+  labs(title = "OMR = -5000")
+
+ggplot(node30) + 
+  geom_density(aes(Velocity_No_Pumping), color = "navy", fill = "navy", alpha = 0.5) +
+  geom_density(aes(Velocity_Pumping), color = "red", fill = "red", alpha = 0.5)+
+  theme_bw() + 
+  labs(title = "OMR = -3000")
+
+ggplot(node20) + 
+  geom_density(aes(Velocity_No_Pumping), color = "navy", fill = "navy", alpha = 0.5) +
+  geom_density(aes(Velocity_Pumping), color = "red", fill = "red", alpha = 0.5)+
+  theme_bw() + 
+  labs(title = "OMR = -2000")
+```
+
+```{r}
+source("functions.R")
+
+result_461 <- calc_overlap(file, nodeNum = 461, chanNum = 51)
+result_351 <- calc_overlap(file, nodeNum = 351, chanNum = 431)
+result_93 <- calc_overlap(file, nodeNum = 93, chanNum = 108)
+result_38 <- calc_overlap(file, nodeNum = 38, chanNum = 43)
+result_31 <- calc_overlap(file, nodeNum = 31, chanNum = 35)
+result_26 <- calc_overlap(file, nodeNum = 26, chanNum = 30)
+
+hourly_results <- bind_rows(result_461, result_351, result_93, result_38, result_31, result_26) %>%
+  mutate(timestep = "hourly")
+```
+
+# Compare hourly vs daily data 
+## Create daily data 
+
+```{r}
+nodeNum = 26
+chanNum = 30
+
+nodeNum = 26
+
+data_node<- file %>%
+  filter(node == nodeNum) %>%
+  group_by(date, channel_id, channel_number, node, monthlyOMR) %>%
+  summarize(Velocity_Pumping = mean(Velocity_Pumping, na.rm = TRUE),
+         Velocity_No_Pumping = mean(Velocity_No_Pumping, na.rm = TRUE),
+         OMR = mean(OMR, na.rm= TRUE),
+         SAC = mean(SAC, na.rm = TRUE),
+         SJR = mean(SJR, na.rm = TRUE)) %>%
+  ungroup()
+
+d_5000 <- data_node %>% filter(monthlyOMR >= -5500 & monthlyOMR <= -4500)
+d_3000 <- data_node %>% filter(monthlyOMR >= -3500 & monthlyOMR <= -2500)
+d_2000 <- data_node %>% filter(monthlyOMR >= -2500 & monthlyOMR <= -1500)
+
+ggplot(data = d_2000) + 
+  geom_density(aes(Velocity_No_Pumping), color = "navy", fill = "navy", alpha = 0.5) +
+  geom_density(aes(Velocity_Pumping), color = "red", fill = "red", alpha = 0.5) +
+  xlim(-1, 3)
+ggplot(data = d_3000) + 
+  geom_density(aes(Velocity_No_Pumping), color = "navy", fill = "navy", alpha = 0.5) +
+  geom_density(aes(Velocity_Pumping), color = "red", fill = "red", alpha = 0.5)
+ggplot(data = d_5000) + 
+  geom_density(aes(Velocity_No_Pumping), color = "navy", fill = "navy", alpha = 0.5) +
+  geom_density(aes(Velocity_Pumping), color = "red", fill = "red", alpha = 0.5)
+
+
+
+nodes_list5 <- list(d_5000$Velocity_Pumping, d_5000$Velocity_No_Pumping)
+nodes_list3 <- list(d_3000$Velocity_Pumping, d_3000$Velocity_No_Pumping)
+nodes_list2 <- list(d_2000$Velocity_Pumping, d_2000$Velocity_No_Pumping)
+out <- overlap(nodes_list5, nbins = 100, boundaries=c(-1,3), plot = TRUE, type = "2")
+out <- overlap(nodes_list3, nbins = 100, plot = TRUE, type = "2")
+out <- overlap(nodes_list2, nbins = 100, plot = TRUE, type = "2") 
+```
+
+```{r}
+source("functions.R")
+
+result_d26 <- calc_overlap_daily(file, nodeNum = 26, chanNum = 30)
+result_d31 <- calc_overlap_daily(file, nodeNum = 31, chanNum = 35)
+result_d38 <- calc_overlap_daily(file, nodeNum = 38, chanNum = 43)
+result_d93 <- calc_overlap_daily(file, nodeNum = 93, chanNum = 108)
+result_d351 <- calc_overlap_daily(file, nodeNum = 351, chanNum = 431)
+result_d461 <- calc_overlap_daily(file, nodeNum = 461, chanNum = 51)
+
+daily_results <- bind_rows(result_d461, result_d351, result_d93, result_d38, result_d31, result_d26) %>%
+  mutate(timestep = "daily")
+
+```
+
+```{r}
+ex_results <- bind_rows(daily_results, hourly_results)
+
+png("figures/comparison_daily_hourly_cat.png", height = 6, width = 6.5, units = "in", res = 300)
+ggplot(ex_results) + 
+  geom_point(aes(factor(node), overlap, color = timestep, shape = factor(OMR)), alpha = 0.6, size = 4) +
+  scale_color_manual(values = c("steelblue4", "salmon3")) +
+  theme_bw()
+dev.off()
+
+```
+
+
+# Create metric of median velocity difference
+```{r}
+source("functions.R")
+
+vel_result_461 <- diff_vel(file, nodeNum = 461, chanNum = 51)
+vel_result_431 <-diff_vel(file, nodeNum = 351, chanNum = 431)
+vel_result_93 <-diff_vel(file, nodeNum = 93, chanNum = 108)
+vel_result_38 <-diff_vel(file, nodeNum = 38, chanNum = 43)
+vel_result_31 <-diff_vel(file, nodeNum = 31, chanNum = 35)
+vel_result_26 <-diff_vel(file, nodeNum = 26, chanNum = 30)
+
+vel_results <- rbind(vel_result_461, vel_result_431, vel_result_93, vel_result_38, vel_result_31, vel_result_26) %>%
+  select(Date, month, year, date, channel_id, channel_number, node, InflowGrp, OMR2, SAC, SJR,  timestep, vdiff)
+
+vel_results_summary <- vel_results %>%
+  mutate(over_thresh=if_else(abs(vdiff) > 0.1, 1L, 0L)) %>%
+  group_by(year, node, channel_id, channel_number, InflowGrp, OMR2) %>%
+  reframe(n = n(),
+          mean_vdiff = mean(vdiff, na.rm = TRUE),
+          prop_over_thresh = over_thresh/n) %>%
+  distinct()
+
+ggplot(vel_results_summary) + geom_col(aes(x = OMR2, y = prop_over_thresh)) + facet_wrap(~InflowGrp)
+ggplot(vel_results_summary) + geom_col(aes(x = OMR2, y = mean_vdiff)) + facet_grid(node~InflowGrp)
+
+vel_results_summary2 <- vel_results_summary %>%
+  group_by()
+```
+
+```{r}
+
+```
+
