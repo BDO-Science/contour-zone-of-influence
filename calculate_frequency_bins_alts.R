@@ -25,7 +25,6 @@ col_order = c("Flow", "OMR", "OMR_range",  "EXP1", "EXP3", "NAA",
               "ALT3", "ALT4")
 inflow_order = c("lolo", "lomed", "lohi", "medlo", "medmed", "medhi", "hilo", "himed", "hihi", "NA")
 omr_order = c("< -3500", ">= -3500")
-pal <- c('#003E51','#007396', '#C69214', '#DDCBA4','#FF671F', '#215732','#4C12A1','#9a3324', "#88CCEE","#AA4499")
 
 # read in data
 bins <- read_excel("data_raw/calsim/Reclamation_2021LTO_SacR_SJR_OMR_Binning_rev01_20230929_result.xlsx", skip = 5)
@@ -153,7 +152,7 @@ ggplot(bins_plotting%>% filter(!Alt %in% c("EXP1", "EXP3"))) +
           strip.text = element_text(size = 14),
           legend.position = "top"))
 
-ggplot(bins_months) + geom_boxplot(aes(x = Sac.cfs, y = ))
+
 
 # export------------
 
