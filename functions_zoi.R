@@ -6,7 +6,7 @@
 # produces an "sp" object
 create_df <- function(groupname, flow, alt) {
   group_data <- zoi_channel_long %>%
-    dplyr::select(OMR_Flow, Alt, node, channel_number, length_feet, upnode, downnode, group, overlap)
+    dplyr::select(OMR_Flow, Alt, node, channel_number, length, upnode, downnode, group, overlap)
   group_node <- inner_join(nodes_4326, group_data) %>%
     mutate(overlap = ifelse(overlap<0, NA, overlap)) %>%
     na.omit()# may be some missing
@@ -88,7 +88,8 @@ f_data_interp_contour <- function(gpname, altname) {
   return(contours)
 }
 
-# Subsequent functions do the same, but for different combinations of OMR
+# Subsequent functions do the same, but for different combinations of OMR.
+# Not all of the combinations have all of the OMR bins represented.
 f_data_interp_contour_no2000 <- function(gpname, altname) {
   sp_3500 <- create_df(groupname = gpname, flow = "-3500", alt = altname)
   sp_5000 <- create_df(groupname = gpname, flow = "-5000", alt = altname)
@@ -160,21 +161,19 @@ f_data_interp_contour_no20005500 <- function(gpname, altname) {
   return(contours)
 }
 
-
+# This function plots a specific contour and then exports it out
+# @alt = alternative name
+# @cont = contour of interest, should be in a proportion (e.g. 0.75)
 plot_contours <- function(alt, cont) {
 
   map_75_f <- ggplot() +
      geom_sf(data = WW_Delta_crop, fill = "gray90", color = "gray70", alpha = 0.7, inherit.aes = FALSE) +
      geom_path(data = contourGroup %>% filter(Alt == alt) %>% filter(contour == cont), aes(x = long, y = lat, group  = grouper, color= OMR_flow, linetype = OMR_flow), linewidth = 0.5, inherit.aes = FALSE) +
-     # annotation_north_arrow(location = "tr", which_north = "true",
-     #                        pad_x = unit(.1, "in"), pad_y = unit(0.2, "in"),
-     #                        style = north_arrow_fancy_orienteering) +
-     # annotation_scale(location = "bl", bar_cols = c("black", "white", "black", "white")) +
      facet_wrap(~Inflow) +
      ylim(c(37.7, 38.1)) +
      xlim(c(-121.8, -121.2)) +
      scale_color_viridis_d(option = "turbo") +
-     labs(title = paste(alt, cont, "contour")) +
+     labs(title = paste(alt, cont, "contour"), color = "OMR Bin", linetype = "OMR Bin") +
      theme_classic() +
      theme(axis.text = element_blank(),
            axis.ticks = element_blank(),
@@ -186,15 +185,15 @@ plot_contours <- function(alt, cont) {
 }
 
 
+# This function plots a specific contour and then exports it out, includes all alternatives
+# @grp = inflow group
+# @cont = contour of interest, should be in a proportion (e.g. 0.75)
+
 plot_contours_facetalt <- function(grp, cont) {
 
   map_75_f <- ggplot() +
     geom_sf(data = WW_Delta_crop, fill = "gray90", color = "gray70", alpha = 0.7, inherit.aes = FALSE) +
     geom_path(data = contourGroup %>% filter(Inflow == grp) %>% filter(contour == cont), aes(x = long, y = lat, group  = grouper, color= OMR_flow, linetype = OMR_flow), linewidth = 0.5, inherit.aes = FALSE) +
-    # annotation_north_arrow(location = "tr", which_north = "true",
-    #                        pad_x = unit(.1, "in"), pad_y = unit(0.2, "in"),
-    #                        style = north_arrow_fancy_orienteering) +
-    # annotation_scale(location = "bl", bar_cols = c("black", "white", "black", "white")) +
     facet_wrap(~Alt) +
     ylim(c(37.7, 38.1)) +
     xlim(c(-121.8, -121.2)) +
@@ -211,7 +210,7 @@ plot_contours_facetalt <- function(grp, cont) {
 }
 
 
-# This function makes the stacked barplots and writes them out as figures
+# This function makes the stacked barplots for channel length and writes them out as figures
 # @grp = inflow group
 plot_barplot <- function(grp) {
 
@@ -234,64 +233,73 @@ plot_barplot <- function(grp) {
                     theme_classic() +
                     theme(legend.position = "top",
                           legend.box = "vertical",
-                          axis.text.x = element_text(angle = 90))
+                          axis.text.x = element_text(angle = 90),
+                          axis.title.x = element_blank())
 
   # Save plots ----------------------------------
   ggsave(filename=paste0("figures/attachment_plots/stacked_barplot_", grp, ".png"), plot=barplot, height = 8, width = 7, units = "in")
 }
 
-# This function makes the stacked barplots and writes them out as figures
-# @alt = alternative
-# plot_barplot_alt <- function(alt) {
-#
-#   pal <- c('#9a3324', "#88CCEE","#AA4499",'#003E51','#007396', '#C69214', '#DDCBA4','#FF671F', '#215732','#4C12A1')
-#
-#   barplot <-
-#     filtered_dat %>%
-#     filter(Alt == alt) %>%
-#     ggplot(aes(x = group, y = pLength, fill = group, pattern = h_influence)) +
-#     geom_col_pattern(color = "black",
-#                      pattern_color = "black",
-#                      pattern_fill = "black",
-#                      pattern_spacing = 0.05,
-#                      pattern_size = 0.4,
-#                      alpha = 0.9)  +
-#     labs(y = "Proportional Channel Length", title = grp) +
-#     scale_pattern_manual(values = c("none", "circle", "stripe")) +
-#     facet_wrap(~OMR_Flow) +
-#     scale_fill_manual(values = pal[c(3,4,5,6,7,8,10)]) +
-#     theme_classic() +
-#     theme(legend.position = "top",
-#           legend.box = "vertical",
-#           axis.text.x = element_text(angle = 90))
-#
-#   # Save plots ----------------------------------
-#   ggsave(filename=paste0("figures/attachment_plots/stacked_barplot_", grp, ".png"), plot=barplot, height = 8, width = 7, units = "in")
-# }
+
+# This function makes the stacked barplots for channel length by inflow group nd writes them out as figures. Dataset specific to BA components.
+# @grp = inflow group
+plot_barplot_BA <- function(grp) {
+
+  pal <- c('#9a3324', "#88CCEE","#AA4499",'#003E51','#007396', '#C69214', '#DDCBA4','#FF671F', '#215732','#4C12A1')
+
+  barplot <-
+    filtered_dat_BA %>%
+    filter(group == grp) %>%
+    ggplot(aes(x = Alt, y = pLength, fill = Alt, pattern = h_influence)) +
+    geom_col_pattern(color = "black",
+                     pattern_color = "black",
+                     pattern_fill = "black",
+                     pattern_spacing = 0.05,
+                     pattern_size = 0.4,
+                     alpha = 0.9)  +
+    labs(y = "Proportional Channel Length", title = grp) +
+    scale_pattern_manual(values = c("none", "circle", "stripe")) +
+    facet_wrap(~OMR_Flow) +
+    scale_fill_manual(values = pal[c(3,4,5,6,7,8,10)]) +
+    theme_classic() +
+    theme(legend.position = "top",
+          legend.box = "vertical",
+          axis.text.x = element_text(angle = 90),
+          axis.title.x = element_blank())
+
+  # Save plots ----------------------------------
+  ggsave(filename=paste0("figures/attachment_plots/BA_stacked_barplot_", grp, ".png"), plot=barplot, height = 8, width = 7, units = "in")
+}
 
 
-# Map making function
-# @group = inflow group
-# @clevel = proportion overlap contour level (0.75, 0.25)
-# produces map
-make_map <- function(grp, clevel){
 
-  # Make a dataset that filters contours for group and contour level of interest. This needs to run
-  # after you have already made the contours_all file (run all the contours and combine)
-  contourGroup <- contours_all %>%
-    filter(group2 == grp & contour == clevel) %>%
-    mutate(grouper = paste0(group, "_", flow))
-  # Map not including basemap
-  (ggplot() +
-      geom_sf(data = delta_4326, fill = NA, inherit.aes = FALSE, linetype = "dashed") +
-      geom_sf(data = WW_Delta_crop, fill = "lightskyblue2", color = "lightskyblue2", alpha = 0.7, inherit.aes = FALSE) +
-      geom_sf(data = nodes_4326, size = 0.4, color = "gray30", inherit.aes = FALSE) +
-      geom_path(data = contourGroup, aes(x = long, y = lat, group  = grouper, color= OMR_flow), linewidth = 1, inherit.aes = FALSE) +
-      annotation_north_arrow(location = "tr", which_north = "true",
-                             pad_x = unit(.1, "in"), pad_y = unit(0.2, "in"),
-                             style = north_arrow_fancy_orienteering) +
-      annotation_scale(location = "bl", bar_cols = c("black", "white", "black", "white")) +
-      scale_color_manual("OMR Flow (cfs)", values = cpal[c(1,2,3,4,5)]) +
-      labs(title = paste(grp, "contour", clevel))+
-      theme_classic())
+# This function makes the stacked barplots for channel length by alternative and writes them out as figures. Dataset specific to BA components.
+# @alt = alternative name
+plot_barplot_alt <- function(alt) {
+
+  pal <- c('#9a3324', "#88CCEE","#AA4499",'#003E51','#007396', '#C69214', '#DDCBA4','#FF671F', '#215732','#4C12A1')
+
+  barplot <-
+    filtered_dat %>%
+    filter(Alt == alt) %>%
+    ggplot(aes(x = OMR_Flow, y = pLength, fill = OMR_Flow, pattern = h_influence)) +
+    geom_col_pattern(color = "black",
+                     pattern_color = "black",
+                     pattern_fill = "black",
+                     pattern_spacing = 0.05,
+                     pattern_size = 0.4,
+                     alpha = 0.9)  +
+    labs(y = "Proportional Channel Length", title = alt) +
+    scale_pattern_manual(values = c("none", "circle", "stripe")) +
+    facet_wrap(~group) +
+    # scale_fill_manual(values = pal[c(3,4,5,6,7,8,10)]) +
+    scale_fill_viridis_d(option = "turbo") +
+    theme_classic() +
+    theme(legend.position = "top",
+          legend.box = "vertical",
+          axis.text.x = element_text(angle = 90),
+          axis.title.x = element_blank())
+
+  # Save plots ----------------------------------
+  ggsave(filename=paste0("figures/attachment_plots/stacked_barplot_", alt, ".png"), plot=barplot, height = 8, width = 7, units = "in")
 }
