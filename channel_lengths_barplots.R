@@ -1,5 +1,8 @@
 ##### channel_lengths_barplots.R ######
-##### Catarina Pien and Lisa Elliott #####
+# contour_maps_inflow.R ######
+# Updated: 11/16/2023
+# Catarina Pien and Lisa Elliott (USBR)
+# cpien@usbr.gov; lelliott@usbr.gov
 # This code uses zone of influence modeling results (DSM2) to create barplots showing
 # how channel length associated with the zone of influence changes from operational facilities based on pumping
 # to different OMR levels, at different SJR and SR flow levels and alternatives
@@ -25,10 +28,11 @@ inflow_order = c("lolo", "lomed", "lohi", "medlo", "medmed", "medhi", "hilo", "h
 alt_order = c("NAA","Alt1","Alt2woTUCPwoVA","Alt2woTUCPDeltaVA", "Alt2woTUCPAllVA", "Alt2wTUCPwoVA", "Alt4")
 
 # Read data ---------------------------------------------------------
-# from contour_maps_inflow_allalts.R
+
 zoi_channel_group <- read_csv("data_export/prop_overlap_data_long.csv") %>%
-  filter(overlap>=0)
-n_flow_OMR_alt <- read_csv("data_export/samplesizes_flow_OMR_alt.csv")
+  filter(overlap>=0)# from contour_maps_inflow_allalts.R
+
+n_flow_OMR_alt <- read_csv("data_export/samplesizes_flow_OMR_alt.csv")# from calculate_frequency_bins_alts.R
 
 # Filter to contours of interest -------------------------------------
 # Based on BA
@@ -185,20 +189,7 @@ ggsave(filename="figures/attachment_plots/med_influence_omr_barplots_ba.png", pl
     scale_fill_manual(values = pal[c(3,5,6,7)]))
 ggsave(filename="figures/attachment_plots/med_influence_inflow_barplots_ba.png", plot=med_barplot_inflow_ba, height =8, width = 6, units = "in")
 
-
-
-
-
-# look at just high
-filtered2_high %>%
-  ggplot() +
-  geom_col(aes(OMR_Flow, pLength, fill = Alt), position= position_dodge(0.75, preserve = "single")) +
-  facet_wrap(~group) +
-  labs(y = "Proportional Channel Length", title = "High hydro influence") +
-  theme_bw() +
-  scale_fill_manual(values = pal[c(3,4,5,6,7,8,10)])
-
-# make medium table --------------------------------------
+# make channel length table --------------------------------------
 med_table <- filtered2_med %>%
   dplyr::select(-pLength,-h_influence) %>%
   mutate(Alt = factor(Alt, levels = alt_order)) %>%
@@ -215,6 +206,8 @@ med_prop <- med_table %>%
   mutate(across(NAA:Alt4, ~ round((.x-NAA)/NAA * 100))) %>%
   pivot_longer(cols = NAA:Alt4, values_to = "changeLength", names_to = "Alt")
 
+write_csv(med_table_EIS, "data_export/tab9_medium_hydro_channel_length_EIS.csv")
+#** EIS --------------------------------
 med_table_EIS <- left_join(med_table_long, med_prop) %>%
   # mutate_if(is.numeric, ~as.character(.),
             # is.character, ~replace_na(.,""))
@@ -226,15 +219,14 @@ med_table_EIS <- left_join(med_table_long, med_prop) %>%
   mutate(group = factor(group, levels = inflow_order))%>%
   dplyr::select(`Inflow group` = group, `OMR bin` = OMR_Flow,
                 NAA, Alt1, Alt2woTUCPwoVA, Alt2woTUCPDeltaVA, Alt2woTUCPAllVA, everything())
-
+#** BA ---------------------
 med_table_BA <- med_table %>%
   dplyr::select(`Inflow group` = group, `OMR bin` = OMR_Flow, NAA, Alt2woTUCPwoVA, Alt2woTUCPDeltaVA, Alt2woTUCPAllVA)
 
-# write tables
-write_csv(med_table_EIS, "data_export/tab9_medium_hydro_channel_length_EIS.csv")
 write_csv(med_table_BA, "data_export/tab8_medium_hydro_channel_length_BA.csv")
 
-# Calculate lows and highs for text
+
+# Calculate lows and highs for narrative -------------------------
 ordered_medium <- med_table_long %>% arrange(sumLength) %>%
   mutate(propLength = round(sumLength/3849200 *100,2))
 
@@ -243,6 +235,7 @@ ordered_medium_prop <- med_prop %>% arrange(changeLength)
 ordered_medium_BA <- med_table_long %>% arrange(sumLength) %>%
   filter(!(Alt %in% c("Alt1", "Alt4", "Alt2wTUCPwoVA", "NAA"))) %>%
   mutate(propLength = round(sumLength/3849200 *100,2))
+
 ordered_medium_Alt2 <- med_table_long %>% arrange(sumLength) %>%
   filter(!(Alt %in% c("Alt1", "Alt4",  "NAA"))) %>%
   mutate(propLength = round(sumLength/3849200 *100,2))
@@ -250,14 +243,13 @@ ordered_medium_Alt2 <- med_table_long %>% arrange(sumLength) %>%
 # write out all the stacked barplots -----------------------------
 lapply(inflow_order, plot_barplot)
 lapply(alt_order, plot_barplot_alt)
-plot_barplot_BA("NAA")
-
-plot_barplot_alt(alt = "NAA")
 
 # individual plot
 plot_barplot("lohi")
+plot_barplot_BA("NAA")
+plot_barplot_alt(alt = "NAA")
 
-# faceted all
+# faceted barplot for all alts
 barplot_f <-
   filtered_dat %>%
   ggplot(aes(x = Alt, y = pLength, fill = Alt, pattern = h_influence)) +
