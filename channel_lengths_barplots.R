@@ -144,6 +144,17 @@ ggsave(filename="figures/attachment_plots/med_influence_omr_barplots_eis.png", p
   scale_fill_manual(values = pal[c(3,4,5,6,7,8,10)]))
 ggsave(filename="figures/attachment_plots/med_influence_inflow_barplots_eis.png", plot=med_barplot_inflow_eis, height =8, width = 6, units = "in")
 
+(med_barplot_inflow_alt <- med_barplot_data %>%
+    ggplot() +
+    geom_col(aes(Alt, pLength, fill = OMR_Flow), position= position_dodge(0.75, preserve = "single"), width = 0.6) +
+    geom_text(aes(Alt, pLength, group = OMR_Flow, label = low_n), vjust = -0.1, position= position_dodge(0.75))+
+    facet_wrap(~group, nrow = 4) +
+    labs(y = "Proportional Channel Length", x = "Inflow Group", fill = "Alternative") +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle = 90),
+          legend.position = "top") +
+    scale_fill_manual(values = pal[c(3,4,5,6,7,8,10)]))
+
 #** BA figures -----------------------------
 med_barplot_data_ba <- med_barplot_data %>%
   filter(!(Alt %in% c("Alt1", "Alt4", "Alt2wTUCPwoVA")))
@@ -220,8 +231,8 @@ med_table_BA <- med_table %>%
   dplyr::select(`Inflow group` = group, `OMR bin` = OMR_Flow, NAA, Alt2woTUCPwoVA, Alt2woTUCPDeltaVA, Alt2woTUCPAllVA)
 
 # write tables
-# write_csv(med_table_EIS, "data_export/tab8_medium_hydro_channel_length_EIS.csv")
-# write_csv(med_table_BA, "data_export/tab7_medium_hydro_channel_length_BA.csv")
+write_csv(med_table_EIS, "data_export/tab9_medium_hydro_channel_length_EIS.csv")
+write_csv(med_table_BA, "data_export/tab8_medium_hydro_channel_length_BA.csv")
 
 # Calculate lows and highs for text
 ordered_medium <- med_table_long %>% arrange(sumLength) %>%
@@ -263,5 +274,6 @@ barplot_f <-
   theme_classic() +
   theme(legend.position = "top",
         legend.box = "vertical",
-        axis.text.x = element_text(angle = 45, hjust = 0.5, vjust = 0.5))
+        axis.text.x = element_text(angle = 90),
+        axis.title = element_blank())
 ggsave(filename="figures/attachment_plots/stacked_barplot_all.png", plot=barplot_f, height = 10, width = 7, units = "in")
