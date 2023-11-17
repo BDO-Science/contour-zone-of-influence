@@ -34,6 +34,8 @@ Code
 	functions_zoi.R
 4. Original contour map and channel length analyses based on month:
 	archive/make_contours_updatedDSM2.R
+5. Calculate frequency in OMR and inflow bins for each alternative:
+	calculate_frequency_bins_alts.R
 
 Files not directly used in LTO:
 
@@ -41,17 +43,19 @@ Files not directly used in LTO:
 	node_map.Rmd
 2. See how months correspond to inflow groups:
 	make_month_subsetgroup_plots.R
-3. Calculate frequency in OMR and inflow bins for each alternative:
-	calculate_frequency_bins_alts.R
+
 
 Data exports (data_export/):
 
 1. Sample sizes for BA frequency analysis (based on Calsim3; might change):
 	bin_samplesizes_acrossalts_freq.csv
 	bin_prop_samplesizes_acrossalts_freq.csv
-2. Sample sizes for ZOI analysis (based on Calsim3):
+2. Sample sizes for ZOI analysis (based on Calsim3 or DSM2):
 	bin_samplesizes_acrossalts_zoi.csv
 	bin_prop_samplesizes_acrossalts_zoi.csv
+	tab2_samplesizes_inflowgroups_alts_dsm2.csv
+	tab4_samplesizes_inflowgroups_alts_dsm2.csv
+	data_not_included_allalts.csv
 3. Flow bins:
 	flow_subset_table_sumstats.csv (details the flow ranges under NAA)
 	flow_omr_subsets_month_year_dectojun.csv (flow/omr sample sizes NAA; filters to months of interest)
@@ -59,6 +63,6 @@ Data exports (data_export/):
 	flowbin_samplesizes_acrossalts_zoi.csv (sample sizes across alts; does not filter to OMR bin)
 	data_not_included_allalts.csv (data not included based on OMR and Flow binning)
 4. Channel length tables across alts (length, comparison with NAA) for BA and EIS:
-  medium_hydro_channel_length_BA.csv
-  medium_hydro_channel_length_EIS.csv
+  tab8_medium_hydro_channel_length_BA.csv
+  tab9_medium_hydro_channel_length_EIS.csv
 
