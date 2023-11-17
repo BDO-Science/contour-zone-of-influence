@@ -19,6 +19,7 @@ library(sf)
 library(stars)
 library(readr)
 library(janitor)
+library(here)
 
 #IDW
 library(sp)
@@ -33,10 +34,11 @@ library(ggspatial)
 library(deltamapr)
 library(viridis)
 
-source("functions_zoi.R")
+# This file contains many of the functions used to create contour maps
+source(here("functions_zoi.R"))
 
 # Read/Join data ---------------------------------------------------------
-delta <- st_read("shapefiles/Bay_Delta_Poly_New.shp")
+delta <- st_read(here("shapefiles/Bay_Delta_Poly_New.shp"))
 zoi_file_NAA = list.files("data_raw/zoi/", pattern = "NAA_.*csv$", full.names = TRUE)
 zoi_file_Alt1 = list.files("data_raw/zoi/", pattern = "ALT1_.*csv$", full.names = TRUE)
 zoi_file_Alt2d = list.files("data_raw/zoi/", pattern = "ALT2v1_wTUCP_.*csv$", full.names = TRUE)
@@ -88,8 +90,10 @@ zoi_data_Alt4 <- lapply(zoi_file_Alt4, read_csv) %>%
   mutate(OMR_Flow = if_else(OMR_Flow == "-sTha", "<-5500", OMR_Flow)) %>%
   mutate(Alt = "Alt4")
 
+# combine each individual file
 zoi_data <- rbind(zoi_data_NAA, zoi_data_Alt1, zoi_data_Alt2a, zoi_data_Alt2b, zoi_data_Alt2c, zoi_data_Alt2d, zoi_data_Alt4)
 
+# read in nodes, channels data
 nodes <- st_read("shapefiles/nodes.shp") %>%
   dplyr::select(node)
 nodes_4326 <- st_transform(nodes, crs = 4326) %>%
@@ -107,7 +111,6 @@ channels <- channels1[!channels1$downnode %in% dropNodes, ]
 total_channel_length <- sum(channels$length)
 
 # Join channel lengths with zoi data
-#zoi_channel <- left_join(zoi_data, nodes)
 zoi_channel <- left_join(zoi_data, channels)
 zoi_channel <- merge(zoi_data, channels, by = "channel_number")
 
@@ -119,7 +122,6 @@ nodes_4326 <- st_transform(nodes, crs = 4326) %>%
 WW_Delta_4326 <- st_transform(WW_Delta, crs = st_crs(delta_4326))
 WW_Delta_crop <- st_crop(WW_Delta_4326,xmin = -122.2, xmax = -121, ymin = 37.5, ymax = 38.8) %>%
   filter(HNAME!= "SAN FRANCISCO BAY")
-plot(WW_Delta_crop)
 
 # Convert data frame to long
 zoi_channel_long <- zoi_channel %>%
@@ -128,7 +130,7 @@ zoi_channel_long <- zoi_channel %>%
 # Write data for channel length script
 # write_csv(zoi_channel_long, "data_export/prop_overlap_data_long.csv")
 
-# Look at data
+# Look at raw data -----------------------------------
 summary_vals <- zoi_channel_long %>%
   filter(overlap>=0) %>%
   group_by(group, OMR_Flow, Alt) %>%
@@ -137,6 +139,7 @@ summary_vals <- zoi_channel_long %>%
             mean = mean(overlap)) %>%
   ungroup()
 
+## plots ----------------------
 ggplot(summary_vals) +
   geom_col(aes(x = Alt, y = mean, fill = Alt)) + facet_grid(OMR_Flow~group)+
   scale_fill_viridis_d()
@@ -147,7 +150,7 @@ ggplot(zoi_channel_long %>% filter(overlap>=0)) +
   scale_fill_viridis_d()
 
 # Create data frames for each inflow-OMR group --------------------
-# Look at sample sizes
+# Look at which combinations are missing for the next exercise
 png("figures/allalts_missingcombos.png", units = "in", width = 7, height = 7, res = 300)
 zoi_channel_long %>% filter(overlap>=0) %>%
   group_by(Alt, group, OMR_Flow) %>%
@@ -158,6 +161,7 @@ zoi_channel_long %>% filter(overlap>=0) %>%
   theme(axis.text.x = element_text(angle = 90))
 dev.off()
 
+# filtered to medium hydrologic overlap sample sizes
 png("figures/allalts_samplesizes_medhydro.png", units = "in", width = 7, height = 7, res = 300)
 zoi_channel_long %>% filter(overlap>=0 & overlap <=0.75) %>%
   group_by(Alt, group, OMR_Flow) %>%
@@ -173,7 +177,7 @@ zoi_channel_long %>% filter(overlap>=0 & overlap <=0.75) %>%
 dev.off()
 
 
-# Run function
+# Run contour functions -------------------------------------
 inflow_order = c("lolo", "lomed", "lohi", "medlo", "medmed", "medhi", "hilo", "himed", "hihi")
 alt_order = c("NAA","ALT1","ALT2a", "ALT2b", "ALT2c", "ALT2d","ALT4")
 delta_sp <- as(delta_4326, "Spatial")
@@ -255,13 +259,10 @@ hilo_contour_Alt4 <- f_data_interp_contour_no20005500(gpname = "hilo", altname =
 himed_contour_Alt4 <- f_data_interp_contour(gpname = "himed", altname = "Alt4")
 hihi_contour_Alt4 <- f_data_interp_contour(gpname = "hihi", altname = "Alt4")
 
-## Create contours --------------------------
+## Combine contours --------------------------
 
-# 0.25 represents contour at which 25% overlap exists (less similar)
-# 0.75 represents contour at which 75% overlap exists (more similar)
-
-### Combine all contours ------------
-# switching factor levels will allow color palette to work right
+# 0.75 represents contour at which 75% overlap exists
+# combine first by alternative
 contours_all_NAA <- rbind(lolo_contour_NAA, lomed_contour_NAA, lohi_contour_NAA,
                       medlo_contour_NAA, medmed_contour_NAA, medhi_contour_NAA,
                       hilo_contour_NAA, himed_contour_NAA, hihi_contour_NAA) %>%
@@ -300,9 +301,11 @@ contours_all_Alt4 <- rbind(lolo_contour_Alt4, lomed_contour_Alt4, lohi_contour_A
 save(contours_all_NAA, contours_all_Alt1, contours_all_Alt2a, contours_all_Alt2b, contours_all_Alt2c, contours_all_Alt2d,
      contours_all_Alt4, file = "contours_allalts.Rdata")
 
+# Can start here if desired
+# load("contours_allalts.Rdata")
 
-# Make one file for all
-alt_order = c("NAA","Alt1","Alt2woTUCPwoVA","Alt2woTUCPDeltaVA", "Alt2woTUCPAllVA", "Alt2wTUCPwoVA", "Alt4")
+# Make one contour file for all
+alt_order2 = c("NAA","Alt1","Alt2woTUCPwoVA","Alt2woTUCPDeltaVA", "Alt2woTUCPAllVA", "Alt2wTUCPwoVA", "Alt4")
 
 contourGroup <- rbind(contours_all_NAA, contours_all_Alt1, contours_all_Alt2a, contours_all_Alt2b,
                       contours_all_Alt2c, contours_all_Alt2d, contours_all_Alt4)%>%
@@ -310,18 +313,14 @@ contourGroup <- rbind(contours_all_NAA, contours_all_Alt1, contours_all_Alt2a, c
          label = paste0(group2, "_", flow)) %>%
   rename(Inflow = group2) %>%
   mutate(Inflow = factor(Inflow, levels = inflow_order)) %>%
-  mutate(Alt = case_when(Alt == "Alt2d" ~ "Alt2woTUCPwoVA",
-                         Alt == "Alt2b" ~ "Alt2woTUCPDeltaVA",
-                         Alt == "Alt2c" ~ "Alt2woTUCPAllVA",
+  mutate(Alt = case_when(Alt == "Alt2b" ~ "Alt2woTUCPwoVA",
+                         Alt == "Alt2c" ~ "Alt2woTUCPDeltaVA",
+                         Alt == "Alt2d" ~ "Alt2woTUCPAllVA",
                          Alt == "Alt2a" ~ "Alt2wTUCPwoVA",
                          TRUE ~ Alt),
-         Alt = factor(Alt, levels = alt_order))
+         Alt = factor(Alt, levels = alt_order2))
 
-library(purrr)
-map2(.x=alt_order, .y = c(0.25, 0.75), .f = plot_contours(alt = .x, cont = .y))
-
-lapply(alt_order, plot_contours(alt = alt_order, cont = 0.75))
-# Make plots
+# Make contour plots -------------------------------------------
 plot_contours(alt = "NAA", cont = 0.75)
 plot_contours(alt = "Alt1", cont = 0.75)
 plot_contours(alt = "Alt2wTUCPwoVA", cont = 0.75)
@@ -329,14 +328,4 @@ plot_contours(alt = "Alt2woTUCPDeltaVA", cont = 0.75)
 plot_contours(alt = "Alt2woTUCPAllVA", cont = 0.75)
 plot_contours(alt = "Alt2woTUCPwoVA", cont = 0.75)
 plot_contours(alt = "Alt4", cont = 0.75)
-plot_contours(alt = "NAA", cont = 0.25)
-plot_contours(alt = "Alt1", cont = 0.25)
-plot_contours(alt = "Alt2a", cont = 0.25)
-plot_contours(alt = "Alt2b", cont = 0.25)
-plot_contours(alt = "Alt2c", cont = 0.25)
-plot_contours(alt = "Alt2d", cont = 0.25)
-plot_contours(alt = "Alt4", cont = 0.25)
-
-plot_contours_facetalt(grp = "lolo", cont = 0.75)
-plot_contours_facetalt(grp = "hihi", cont = 0.75)
 
