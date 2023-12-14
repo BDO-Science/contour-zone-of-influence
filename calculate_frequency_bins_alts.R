@@ -1,5 +1,5 @@
 ##############################################
-# Last updated 11/16/2023 by Catarina Pien (USBR)
+# Last updated 12/8/2023 by Catarina Pien (USBR)
 # Contact: cpien@usbr.gov
 # Calculate sample sizes for each alt in flow and OMR bins
 # There is a version for the BA (Frequency) that needs to be edited
@@ -23,7 +23,7 @@ library(purrr)
 # order
 alt_order = c("EXP1", "EXP3", "NAA","ALT1",
               "ALT2d", "ALT2b", "ALT2c", "ALT2a", "ALT3", "ALT4")
-alt_order2 =c("NAA","Alt1","Alt2woTUCPwoVA","Alt2woTUCPDeltaVA", "Alt2woTUCPAllVA", "Alt2wTUCPwoVA", "Alt4")
+alt_order2 =c("NAA","Alt1","Alt2woTUCPwoVA","Alt2woTUCPDeltaVA", "Alt2woTUCPAllVA", "Alt2wTUCPwoVA","Alt3", "Alt4")
 col_order = c("Flow", "OMR", "OMR_range",  "EXP1", "EXP3", "NAA",
               "ALT1",
               "ALT2d", "ALT2b", "ALT2c", "ALT2a",
@@ -45,8 +45,9 @@ bins <- bind_rows(dsm2bins, .id = "id") %>%
                          id == 3 ~ "Alt2a",
                          id == 4 ~ "Alt2c",
                          id ==5 ~ "Alt2d",
-                         id == 6 ~ "Alt4",
-                         id == 7~ "NAA")) %>%
+                         id ==6~ "Alt3",
+                         id == 7 ~ "Alt4",
+                         id == 8~ "NAA")) %>%
   mutate(Sub.group = replace(Sub.group, is.na(Sub.group), "NA")) %>%
   rename(Date = month_year) %>%
   dplyr::select(-Date_x) %>%
@@ -88,8 +89,8 @@ n_flow_Alt <- bins %>%
            fill = list(n = 0))
 
 ### write out ------------------------
-# write_csv(n_flow_OMR_Alt, "data_export/samplesizes_flow_OMR_alt.csv")
-# write_csv(n_flow_Alt, "data_export/samplesizes_flow_alt.csv")
+ # write_csv(n_flow_OMR_Alt, "data_export/samplesizes_flow_OMR_alt.csv")
+ # write_csv(n_flow_Alt, "data_export/samplesizes_flow_alt.csv")
 
 ### plot sample size data --------------------------------
 pal <- c('#9a3324', "#88CCEE","#AA4499",'#003E51','#007396', '#C69214', '#DDCBA4','#FF671F', '#215732','#4C12A1')
@@ -123,7 +124,7 @@ ggsave("figures/plot_dsm2_samples_omr_inflow_blue.png",
     theme_bw() +
     theme(axis.text.x = element_text(angle = 90)))
 ggsave("figures/plot_dsm2_samples_inflow.png",
-       plot = dsm_sample_plot_flow, units = "in", width = 8, height = 8)
+       plot = dsm_sample_barplot_flow, units = "in", width = 8, height = 8)
 
 (dsm_sample_plot_flow <- ggplot(data = n_flow_Alt, aes(x = Alt, y = percent, fill = Sub.group)) +
   geom_col() +
@@ -136,18 +137,18 @@ ggsave("figures/plot_dsm2_samples_inflow.png",
 ### summary stats tables ---------------------------------
 dsm2_samples_inflow_table <- n_flow_Alt %>%
   rename(`Inflow Group` = Sub.group) %>%
-  select(-percent) %>%
+  dplyr::select(-percent) %>%
   pivot_wider(names_from = "Alt", values_from = "n", values_fill = 0)
 
 dsm2_samples_inflow_omr_table <- n_flow_OMR_Alt %>%
   rename(`Inflow Group` = Sub.group, `OMR Bin` = "OMR") %>%
-  select(-percent) %>%
+  dplyr::select(-percent) %>%
   pivot_wider(names_from = "Alt", values_from = "n", values_fill = 0) %>%
   arrange(`Inflow Group`, `OMR Bin`)
 write_csv(dsm2_samples_inflow_omr_table, "data_export/tab4_samplesizes_inflowgroups_omr_alts_dsm2.csv")
 
 samples_excluded <- n_flow_OMR_Alt %>%
-  select(-percent, -Sub.group) %>%
+  dplyr::select(-percent, -Sub.group) %>%
   filter(OMR == "NA") %>%
   group_by(Alt, OMR) %>%
   summarize(prop = sum(n)/700)%>%

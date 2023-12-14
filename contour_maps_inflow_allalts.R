@@ -1,5 +1,5 @@
 # contour_maps_inflow.R ######
-# Updated: 10/25/2023
+# Updated: 11/30/2023
 # Catarina Pien and Lisa Elliott (USBR)
 # cpien@usbr.gov; lelliott@usbr.gov
 
@@ -45,6 +45,7 @@ zoi_file_Alt2d = list.files("data_raw/zoi/", pattern = "ALT2v1_wTUCP_.*csv$", fu
 zoi_file_Alt2a = list.files("data_raw/zoi/", pattern = "ALT2v1_woTUCP_.*csv$", full.names = TRUE)
 zoi_file_Alt2b = list.files("data_raw/zoi/", pattern = "ALT2v2_.*csv$", full.names = TRUE)
 zoi_file_Alt2c = list.files("data_raw/zoi/", pattern = "ALT2v3_.*csv$", full.names = TRUE)
+zoi_file_Alt3 = list.files("data_raw/zoi/", pattern = "ALT3_.*csv$", full.names = TRUE)
 zoi_file_Alt4 = list.files("data_raw/zoi/", pattern = "ALT4_.*csv$", full.names = TRUE)
 
 zoi_data_NAA <- lapply(zoi_file_NAA, read_csv) %>%
@@ -83,6 +84,12 @@ zoi_data_Alt2d <- lapply(zoi_file_Alt2d, read_csv) %>%
   rename(OMR_Flow = id) %>%
   mutate(OMR_Flow = if_else(OMR_Flow == "-sTha", "<-5500", OMR_Flow)) %>%
   mutate(Alt = "Alt2d")
+zoi_data_Alt3 <- lapply(zoi_file_Alt3, read_csv) %>%
+  bind_rows(.id = "id") %>%
+  mutate(id = paste0("-", substr(zoi_file_Alt3[as.numeric(id)],25, 28))) %>%
+  rename(OMR_Flow = id) %>%
+  mutate(OMR_Flow = if_else(OMR_Flow == "-sTha", "<-5500", OMR_Flow)) %>%
+  mutate(Alt = "Alt3")
 zoi_data_Alt4 <- lapply(zoi_file_Alt4, read_csv) %>%
   bind_rows(.id = "id") %>%
   mutate(id = paste0("-", substr(zoi_file_Alt4[as.numeric(id)],25, 28))) %>%
@@ -91,7 +98,9 @@ zoi_data_Alt4 <- lapply(zoi_file_Alt4, read_csv) %>%
   mutate(Alt = "Alt4")
 
 # combine each individual file
-zoi_data <- rbind(zoi_data_NAA, zoi_data_Alt1, zoi_data_Alt2a, zoi_data_Alt2b, zoi_data_Alt2c, zoi_data_Alt2d, zoi_data_Alt4)
+zoi_data <- rbind(zoi_data_NAA, zoi_data_Alt1,
+                  zoi_data_Alt2a, zoi_data_Alt2b, zoi_data_Alt2c,
+                  zoi_data_Alt2d, zoi_data_Alt3, zoi_data_Alt4)
 
 # read in nodes, channels data
 nodes <- st_read("shapefiles/nodes.shp") %>%
@@ -128,7 +137,7 @@ zoi_channel_long <- zoi_channel %>%
   pivot_longer(cols = c(lolo:hihi), names_to = "group", values_to = "overlap")
 
 # Write data for channel length script
-# write_csv(zoi_channel_long, "data_export/prop_overlap_data_long.csv")
+#  write_csv(zoi_channel_long, "data_export/prop_overlap_data_long.csv")
 
 # Look at raw data -----------------------------------
 summary_vals <- zoi_channel_long %>%
@@ -179,7 +188,7 @@ dev.off()
 
 # Run contour functions -------------------------------------
 inflow_order = c("lolo", "lomed", "lohi", "medlo", "medmed", "medhi", "hilo", "himed", "hihi")
-alt_order = c("NAA","ALT1","ALT2a", "ALT2b", "ALT2c", "ALT2d","ALT4")
+alt_order = c("NAA","Alt1","Alt2a", "Alt2b", "Alt2c", "Alt2d", "Alt3","Alt4")
 delta_sp <- as(delta_4326, "Spatial")
 
 # NAA
@@ -248,6 +257,18 @@ hilo_contour_Alt2d <- f_data_interp_contour_no2000(gpname = "hilo", altname = "A
 himed_contour_Alt2d <- f_data_interp_contour(gpname = "himed", altname = "Alt2d")
 hihi_contour_Alt2d <- f_data_interp_contour(gpname = "hihi", altname = "Alt2d")
 
+# Alt3
+lolo_contour_Alt3 <- f_data_interp_contour_no5500(gpname = "lolo", altname = "Alt3")
+lomed_contour_Alt3 <- f_data_interp_contour(gpname = "lomed", altname = "Alt3")
+lohi_contour_Alt3 <- f_data_interp_contour_no50005500(gpname = "lohi", altname = "Alt3")
+medlo_contour_Alt3 <- f_data_interp_contour(gpname = "medlo", altname = "Alt3")
+medmed_contour_Alt3 <- f_data_interp_contour_no5500(gpname = "medmed", altname = "Alt3")
+medhi_contour_Alt3 <- f_data_interp_contour_no20005500(gpname = "medhi", altname = "Alt3")
+hilo_contour_Alt3 <- f_data_interp_contour(gpname = "hilo", altname = "Alt3")
+himed_contour_Alt3 <- f_data_interp_contour(gpname = "himed", altname = "Alt3")
+hihi_contour_Alt3 <- f_data_interp_contour(gpname = "hihi", altname = "Alt3")
+
+
 # Alt4
 lolo_contour_Alt4 <- f_data_interp_contour(gpname = "lolo", altname = "Alt4")
 lomed_contour_Alt4 <- f_data_interp_contour(gpname = "lomed", altname = "Alt4")
@@ -293,22 +314,27 @@ contours_all_Alt2d <- rbind(lolo_contour_Alt2d, lomed_contour_Alt2d, lohi_contou
                           hilo_contour_Alt2d, himed_contour_Alt2d, hihi_contour_Alt2d) %>%
   mutate(OMR_flow = factor(flow, levels = c("-2000", "-3500", "-5000", "<-5500")))
 
+contours_all_Alt3 <- rbind(lolo_contour_Alt3, lomed_contour_Alt3, lohi_contour_Alt3,
+                            medlo_contour_Alt3, medmed_contour_Alt3, medhi_contour_Alt3,
+                            hilo_contour_Alt3, himed_contour_Alt3, hihi_contour_Alt3) %>%
+  mutate(OMR_flow = factor(flow, levels = c("-2000", "-3500", "-5000", "<-5500")))
+
 contours_all_Alt4 <- rbind(lolo_contour_Alt4, lomed_contour_Alt4, lohi_contour_Alt4,
                             medlo_contour_Alt4, medmed_contour_Alt4, medhi_contour_Alt4,
                             hilo_contour_Alt4, himed_contour_Alt4, hihi_contour_Alt4) %>%
   mutate(OMR_flow = factor(flow, levels = c("-2000", "-3500", "-5000", "<-5500")))
 
 save(contours_all_NAA, contours_all_Alt1, contours_all_Alt2a, contours_all_Alt2b, contours_all_Alt2c, contours_all_Alt2d,
-     contours_all_Alt4, file = "contours_allalts.Rdata")
+     contours_all_Alt3, contours_all_Alt4, file = "contours_allalts.Rdata")
 
 # Can start here if desired
 # load("contours_allalts.Rdata")
 
 # Make one contour file for all
-alt_order2 = c("NAA","Alt1","Alt2woTUCPwoVA","Alt2woTUCPDeltaVA", "Alt2woTUCPAllVA", "Alt2wTUCPwoVA", "Alt4")
+alt_order2 = c("NAA","Alt1","Alt2woTUCPwoVA","Alt2woTUCPDeltaVA", "Alt2woTUCPAllVA", "Alt2wTUCPwoVA", "Alt3", "Alt4")
 
 contourGroup <- rbind(contours_all_NAA, contours_all_Alt1, contours_all_Alt2a, contours_all_Alt2b,
-                      contours_all_Alt2c, contours_all_Alt2d, contours_all_Alt4)%>%
+                      contours_all_Alt2c, contours_all_Alt2d, contours_all_Alt3, contours_all_Alt4)%>%
   mutate(grouper = paste0(group, "_", flow, group2),
          label = paste0(group2, "_", flow)) %>%
   rename(Inflow = group2) %>%
@@ -327,5 +353,6 @@ plot_contours(alt = "Alt2wTUCPwoVA", cont = 0.75)
 plot_contours(alt = "Alt2woTUCPDeltaVA", cont = 0.75)
 plot_contours(alt = "Alt2woTUCPAllVA", cont = 0.75)
 plot_contours(alt = "Alt2woTUCPwoVA", cont = 0.75)
+plot_contours(alt = "Alt3", cont = 0.75)
 plot_contours(alt = "Alt4", cont = 0.75)
 

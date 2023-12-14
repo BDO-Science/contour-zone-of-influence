@@ -161,6 +161,19 @@ f_data_interp_contour_no20005500 <- function(gpname, altname) {
   return(contours)
 }
 
+f_data_interp_contour_no50005500 <- function(gpname, altname) {
+  sp_2000 <- create_df(groupname = gpname, flow = "-2000", alt = altname)
+  sp_3500 <- create_df(groupname = gpname, flow = "-3500", alt = altname)
+  r.2000 <- interp_nodes(sp_2000)
+  r.3500 <- interp_nodes(sp_3500)
+  group_list <- c(r.2000, r.3500)
+  contours <- create_contour(group_list, inflow_group = gpname) %>%
+    mutate(flow = case_when(id %in% c(1,2) ~ "-2000",
+                            id %in% c(3,4) ~ "-3500"))%>%
+    mutate(Alt = altname)
+  return(contours)
+}
+
 # This function plots a specific contour and then exports it out
 # @alt = alternative name
 # @cont = contour of interest, should be in a proportion (e.g. 0.75)
@@ -229,7 +242,7 @@ plot_barplot <- function(grp) {
                     labs(y = "Proportional Channel Length", title = grp) +
                     scale_pattern_manual(values = c("none", "circle", "stripe")) +
                     facet_wrap(~OMR_Flow) +
-                    scale_fill_manual(values = pal[c(3,4,5,6,7,8,10)]) +
+                    scale_fill_manual(values = pal[c(3:10)]) +
                     theme_classic() +
                     theme(legend.position = "top",
                           legend.box = "vertical",
@@ -260,7 +273,7 @@ plot_barplot_BA <- function(grp) {
     labs(y = "Proportional Channel Length", title = grp) +
     scale_pattern_manual(values = c("none", "circle", "stripe")) +
     facet_wrap(~OMR_Flow) +
-    scale_fill_manual(values = pal[c(3,4,5,6,7,8,10)]) +
+    scale_fill_manual(values = pal[c(3:10)]) +
     theme_classic() +
     theme(legend.position = "top",
           legend.box = "vertical",

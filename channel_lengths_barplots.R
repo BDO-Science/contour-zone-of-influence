@@ -1,6 +1,6 @@
 ##### channel_lengths_barplots.R ######
 # contour_maps_inflow.R ######
-# Updated: 11/16/2023
+# Updated: 12/8/2023
 # Catarina Pien and Lisa Elliott (USBR)
 # cpien@usbr.gov; lelliott@usbr.gov
 # This code uses zone of influence modeling results (DSM2) to create barplots showing
@@ -25,7 +25,7 @@ source("functions_zoi.R")
 # Ordering ----------------------------------
 inflow_order = c("lolo", "lomed", "lohi", "medlo", "medmed", "medhi", "hilo", "himed", "hihi")
 # alt_order = c("EXP1", "EXP3", "NAA","ALT1","Alt2woTUCPwoVA","Alt2woTUCPDeltaVA", "Alt2woTUCPAllVA", "Alt2wTUCPwoVA", "ALT3", "ALT4")
-alt_order = c("NAA","Alt1","Alt2woTUCPwoVA","Alt2woTUCPDeltaVA", "Alt2woTUCPAllVA", "Alt2wTUCPwoVA", "Alt4")
+alt_order = c("NAA","Alt1","Alt2woTUCPwoVA","Alt2woTUCPDeltaVA", "Alt2woTUCPAllVA", "Alt2wTUCPwoVA", "Alt3", "Alt4")
 
 # Read data ---------------------------------------------------------
 
@@ -101,7 +101,7 @@ filtered_dat <- rbind(filtered2_high, filtered2_med, filtered2_low) %>%
         Alt = factor(Alt, levels = alt_order))
 
 filtered_dat_BA <- filtered_dat %>%
-  filter(!(Alt %in% c("Alt1", "Alt4", "Alt2wTUCPwoVA")))
+  filter(!(Alt %in% c("Alt1", "Alt3", "Alt4", "Alt2wTUCPwoVA")))
 
 # Visualize differences -------------------
 pal <- c('#9a3324', "#88CCEE","#AA4499",'#003E51','#007396', '#C69214', '#DDCBA4','#FF671F', '#215732','#4C12A1')
@@ -131,9 +131,11 @@ med_barplot_data <- left_join(filtered2_med, n_flow_OMR_Alt %>% dplyr::select(OM
   facet_wrap(~group) +
   labs(y = "Proportional Channel Length", x = "OMR Bin", fill = "Alternative") +
     theme_bw() +
-    theme(axis.text.x = element_text(angle = 90),
+    theme(axis.text.x = element_text(angle = 90, size = 10),
+          axis.text.y = element_text(size = 10),
+          strip.text = element_text(size = 10),
           legend.position = "top") +
-  scale_fill_manual(values = pal[c(3,4,5,6,7,8,10)]))
+  scale_fill_manual(values = pal[c(3:10)]))
 ggsave(filename="figures/attachment_plots/med_influence_omr_barplots_eis.png", plot=med_barplot_eis, height = 5, width = 6.5, units = "in")
 
 (med_barplot_inflow_eis <- med_barplot_data %>%
@@ -143,21 +145,26 @@ ggsave(filename="figures/attachment_plots/med_influence_omr_barplots_eis.png", p
   facet_wrap(~OMR_Flow, nrow = 4) +
   labs(y = "Proportional Channel Length", x = "Inflow Group", fill = "Alternative") +
   theme_bw() +
-    theme(axis.text.x = element_text(angle = 90),
+    theme(axis.text.x = element_text(angle = 90, size = 10),
+          axis.text.y = element_text(size = 10),
+          strip.text = element_text(size = 10),
           legend.position = "top") +
-  scale_fill_manual(values = pal[c(3,4,5,6,7,8,10)]))
-ggsave(filename="figures/attachment_plots/med_influence_inflow_barplots_eis.png", plot=med_barplot_inflow_eis, height =8, width = 6, units = "in")
+  scale_fill_manual(values = pal[c(3:10)]))
+ggsave(filename="figures/attachment_plots/med_influence_inflow_barplots_eis.png", plot=med_barplot_inflow_eis, height =7, width = 6, units = "in")
 
-(med_barplot_inflow_alt <- med_barplot_data %>%
+(med_barplot_alt_eis <- med_barplot_data %>%
     ggplot() +
     geom_col(aes(Alt, pLength, fill = OMR_Flow), position= position_dodge(0.75, preserve = "single"), width = 0.6) +
     geom_text(aes(Alt, pLength, group = OMR_Flow, label = low_n), vjust = -0.1, position= position_dodge(0.75))+
     facet_wrap(~group, nrow = 4) +
     labs(y = "Proportional Channel Length", x = "Inflow Group", fill = "Alternative") +
     theme_bw() +
-    theme(axis.text.x = element_text(angle = 90),
+    theme(axis.text.x = element_text(angle = 90, size = 10),
+          axis.text.y = element_text(size = 10),
+          strip.text = element_text(size = 10),
           legend.position = "top") +
-    scale_fill_manual(values = pal[c(3,4,5,6,7,8,10)]))
+    scale_fill_manual(values = pal[c(3:10)]))
+ggsave(filename="figures/attachment_plots/med_influence_alts_barplots_eis.png", plot=med_barplot_alt_eis, height =8, width = 6, units = "in")
 
 #** BA figures -----------------------------
 med_barplot_data_ba <- med_barplot_data %>%
@@ -196,7 +203,7 @@ med_table <- filtered2_med %>%
   pivot_wider(names_from = "Alt", values_from = "sumLength", values_fill = list(n = 0)) %>%
   arrange(group) %>%
   mutate(group = factor(group, levels = inflow_order))%>%
-  dplyr::select(group, OMR_Flow, NAA, Alt1, Alt2woTUCPwoVA, Alt2woTUCPDeltaVA, Alt2woTUCPAllVA, everything())
+  dplyr::select(group, OMR_Flow, NAA, Alt1, Alt2woTUCPwoVA, Alt2woTUCPDeltaVA, Alt2woTUCPAllVA, Alt3, everything())
 
 med_table_long <- med_table %>%
   pivot_longer(cols = NAA:Alt4, values_to = "sumLength", names_to = "Alt")
@@ -206,7 +213,7 @@ med_prop <- med_table %>%
   mutate(across(NAA:Alt4, ~ round((.x-NAA)/NAA * 100))) %>%
   pivot_longer(cols = NAA:Alt4, values_to = "changeLength", names_to = "Alt")
 
-write_csv(med_table_EIS, "data_export/tab9_medium_hydro_channel_length_EIS.csv")
+
 #** EIS --------------------------------
 med_table_EIS <- left_join(med_table_long, med_prop) %>%
   # mutate_if(is.numeric, ~as.character(.),
@@ -218,7 +225,9 @@ med_table_EIS <- left_join(med_table_long, med_prop) %>%
   arrange(group) %>%
   mutate(group = factor(group, levels = inflow_order))%>%
   dplyr::select(`Inflow group` = group, `OMR bin` = OMR_Flow,
-                NAA, Alt1, Alt2woTUCPwoVA, Alt2woTUCPDeltaVA, Alt2woTUCPAllVA, everything())
+                NAA, Alt1, Alt2woTUCPwoVA, Alt2woTUCPDeltaVA, Alt2woTUCPAllVA, Alt3, everything())
+
+write_csv(med_table_EIS, "data_export/tab9_medium_hydro_channel_length_EIS.csv")
 #** BA ---------------------
 med_table_BA <- med_table %>%
   dplyr::select(`Inflow group` = group, `OMR bin` = OMR_Flow, NAA, Alt2woTUCPwoVA, Alt2woTUCPDeltaVA, Alt2woTUCPAllVA)
